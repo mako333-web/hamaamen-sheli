@@ -301,9 +301,12 @@ function ldS(o){S.P=o.P||{};S.eq=o.eq||[];S.log=o.log||[];S.setup=o.setup||0;S.c
 try{ldS(JSON.parse(localStorage.getItem('fit1')||'{}'))}catch(e){}
 S.au={m:'in',u:'',st:1,err:'',busy:0};
 const A0=(()=>{try{return JSON.parse(localStorage.getItem('fit1auth')||sessionStorage.getItem('fit1auth')||'null')}catch(e){return null}})();
-let AU={u:A0&&A0.u||null,id:A0&&A0.id||null,tok:A0&&A0.t||null,db:null};
+let AU={u:A0&&A0.u||null,id:A0&&A0.id||null,tok:A0&&A0.t||null,db:null,fb:A0&&A0.fb?1:0};
 const CLD=()=>!!(window.claude&&claude.use);
-S.v=(AU.u||(A0&&A0.g)||!CLD())?(S.setup?'home':'wiz'):'auth';
+/* חשבונות באתר: הגדרות פרויקט Firebase. אלה לא סודות; ההגנה על הנתונים היא בכללי האבטחה (firestore.rules) */
+const FBC=null;
+const FBON=()=>!!FBC&&!CLD();
+S.v=(AU.u||(A0&&A0.g)||(!CLD()&&!FBC))?(S.setup?'home':'wiz'):'auth';
 const blob=()=>({P:S.P,eq:S.eq,log:S.log,setup:S.setup,cal:S.cal,cg:S.cg,dm:S.dm,wt:S.wt,cx:S.cx,fv:S.fv,ld:S.ld,aw:S.aw,fb:S.fb,bp:S.bp,lv:S.lv,lc:S.lc,awt:S.awt,u:S.u});
 const save=()=>{S.u=Date.now();try{localStorage.setItem('fit1',JSON.stringify(blob()))}catch(e){}push()};
 const $=id=>document.getElementById(id);
@@ -554,7 +557,7 @@ function setP(k,v){S.P[k]=v;if(k==='focus')delete S.P.focusN;save();R()}
 function setLv(i,d){const c=LAD[i],s=Math.max(0,Math.min(c.s.length-1,lstep(i)+d));S.lv[c.n]=s;S.bp[c.s[s]]=0;save();R()}
 function sw(){const v=+$('wk2').value;if(v>20&&v<300){S.wt.push({d:Date.now(),kg:v});S.P.kg=v;save();R()}}
 function setLd(i,k){const v=+$('ld'+i).value;if(v>0){S.ld[k].kg=v;save();R()}}
-function acctUI(){return `<section class="card"><div class="row"><span class="ic" style="font-weight:800">${AU.u?esc(AU.u[0].toUpperCase()):IC.set}</span><div class="grow"><b>${AU.u?esc(AU.u):'אורח'}</b><div class="note">${AU.u?'מסונכרן בין מכשירים':'נשמר רק במכשיר הזה'}</div></div>${AU.u||CLD()?`<button class="btn2" onclick="${AU.u?'logout()':'logout(1)'}">${AU.u?'התנתק':'התחבר'}</button>`:''}</div>
+function acctUI(){return `<section class="card"><div class="row"><span class="ic" style="font-weight:800">${AU.u?esc(AU.u[0].toUpperCase()):IC.set}</span><div class="grow"><b>${AU.u?esc(AU.u):'אורח'}</b><div class="note">${AU.u?'מסונכרן בין מכשירים':'נשמר רק במכשיר הזה'}</div></div>${AU.u||CLD()||FBON()?`<button class="btn2" onclick="${AU.u?'logout()':'logout(1)'}">${AU.u?'התנתק':'התחבר'}</button>`:''}</div>
 <p class="note">${AU.u?'':'כדי לא לאבד נתונים או להעביר אותם לטלפון אחר: שמור גיבוי, ובמכשיר החדש בחר ״שחזר מגיבוי״.'}</p><div class="row"><button class="btn2 grow" onclick="bkOut()">שמור גיבוי</button><label class="btn2 grow" tabindex="0" style="text-align:center" onkeydown="if(event.key==='Enter')this.click()">שחזר מגיבוי<input type="file" accept=".json,application/json" onchange="bkIn(this.files[0]);this.value=''"></label></div><p id="bkm" class="note" hidden></p></section>`}
 function bkOut(){try{const b=new Blob([JSON.stringify({app:'hamaamen',v:1,at:Date.now(),s:blob()})],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='hamaamen-backup-'+dk(new Date())+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}catch(e){const m=$('bkm');if(m){m.hidden=false;m.textContent='שמירת הגיבוי נכשלה בדפדפן הזה.'}}}
 function bkIn(f){if(!f)return;const r=new FileReader(),m=t=>{const e=$('bkm');if(e){e.hidden=false;e.textContent=t}};r.onload=()=>{try{const o=JSON.parse(r.result),d=o&&o.app==='hamaamen'?o.s:null;if(!d||typeof d!=='object'||!d.P)return m('הקובץ הזה לא גיבוי של המאמן שלי.');ldS(d);save();S.v=S.setup?'set':'wiz';R();const e=$('bkm');if(e){e.hidden=false;e.textContent='הגיבוי שוחזר.'}}catch(e){m('לא הצלחתי לקרוא את הקובץ.')}};r.onerror=()=>m('לא הצלחתי לקרוא את הקובץ.');r.readAsText(f)}
@@ -1079,8 +1082,8 @@ const enc=s=>new TextEncoder().encode(s),hex=b=>[...new Uint8Array(b)].map(x=>x.
 const sha=async s=>hex(await crypto.subtle.digest('SHA-256',enc(s)));
 async function pbk(pw,salt){const k=await crypto.subtle.importKey('raw',enc(pw),'PBKDF2',false,['deriveBits']);return hex(await crypto.subtle.deriveBits({name:'PBKDF2',salt:enc(salt),iterations:100000,hash:'SHA-256'},k,256))}
 async function getDb(){if(AU.db)return AU.db;try{if(window.claude&&claude.use)AU.db=await claude.use('db')}catch(e){}return AU.db}
-let pt=null;function push(){if(!AU.u)return;clearTimeout(pt);pt=setTimeout(async()=>{try{const db=await getDb();if(db)await db.collection('accounts').doc(AU.id).update({s:JSON.stringify(blob()),upd:S.u})}catch(e){}},1500)}
-function auth(){const A=S.au,up=A.m==='up';return `<div class="auth"><div class="brand">${LG(84)}<div class="wm"><b>home gym</b><small>MY · COACH</small></div><p class="note">${up?'פותחים חשבון חדש':'ברוך שובך'}</p></div>
+let pt=null;function push(){if(!AU.u)return;clearTimeout(pt);if(AU.fb){pt=setTimeout(fbPush,1500);return}pt=setTimeout(async()=>{try{const db=await getDb();if(db)await db.collection('accounts').doc(AU.id).update({s:JSON.stringify(blob()),upd:S.u})}catch(e){}},1500)}
+function auth(){if(FBON())return fbAuthUI();const A=S.au,up=A.m==='up';return `<div class="auth"><div class="brand">${LG(84)}<div class="wm"><b>home gym</b><small>MY · COACH</small></div><p class="note">${up?'פותחים חשבון חדש':'ברוך שובך'}</p></div>
 <section class="card"><div class="seg"><button class="${up?'':'on'}" onclick="am('in')">התחברות</button><button class="${up?'on':''}" onclick="am('up')">הרשמה</button></div>
 <label class="fld"><span>שם משתמש</span><input id="au1" autocomplete="username" value="${esc(A.u)}"></label><label class="fld"><span>סיסמה</span><input id="au2" type="password" autocomplete="${up?'new-password':'current-password'}"></label>${up?`<label class="fld"><span>אימות סיסמה</span><input id="au3" type="password" autocomplete="new-password"></label>`:''}
 <div><button id="au4" class="chip ${A.st?'on':''}" onclick="astay()">${A.st?IC.ck:''} השאר אותי מחובר</button></div>
@@ -1108,10 +1111,39 @@ async function authGo(){
     S.au={m:'in',u:'',st:1,err:'',busy:0};S.v=S.setup?'home':'wiz';R();
   }catch(x){fail('משהו השתבש. בדוק חיבור ונסה שוב.')}
 }
-async function resume(){if(!AU.u)return;try{const db=await getDb();if(!db)return;const d=(await db.collection('accounts').doc(AU.id).get()).data();
+async function resume(){if(FBON())return fbStart();if(!AU.u)return;try{const db=await getDb();if(!db)return;const d=(await db.collection('accounts').doc(AU.id).get()).data();
   if(!d||!(d.sess||[]).includes(await sha(AU.tok))){try{localStorage.removeItem('fit1auth');sessionStorage.removeItem('fit1auth')}catch(e){}AU={u:null,id:null,tok:null,db:AU.db};if(S.v!=='work'){S.v='auth';R()}return}
   if(d.upd>(S.u||0)&&d.s&&S.v!=='work'){ldS(JSON.parse(d.s));try{localStorage.setItem('fit1',JSON.stringify(blob()))}catch(e){}if(!S.setup)S.v='wiz';R()}else if((S.u||0)>(d.upd||0))push()}catch(e){}}
-function logout(k){try{localStorage.removeItem('fit1auth');sessionStorage.removeItem('fit1auth');if(!k)localStorage.removeItem('fit1')}catch(e){}if(k){AU={u:null,id:null,tok:null,db:AU.db};S.au.m='up';S.v='auth';R()}else location.reload()}
+function logout(k){if(AU.fb&&FB){FB.auth.signOut().catch(()=>{}).then(()=>{AU.fb=0;logout(k)});return}try{localStorage.removeItem('fit1auth');sessionStorage.removeItem('fit1auth');if(!k)localStorage.removeItem('fit1')}catch(e){}if(k){AU={u:null,id:null,tok:null,db:AU.db};S.au.m='up';S.v='auth';R()}else location.reload()}
+
+/* ---------- Firebase: כניסה עם Google וסנכרון בענן (רק באתר, לא בתוך Claude) ---------- */
+const FBV='10.12.2';let FB=null,FBP=null;
+function ldJs(src){return new Promise((ok,no)=>{const e=document.createElement('script');e.src=src;e.onload=ok;e.onerror=no;document.head.appendChild(e)})}
+function fbInit(){if(FBP)return FBP;const b='https://www.gstatic.com/firebasejs/'+FBV+'/';
+  FBP=ldJs(b+'firebase-app-compat.js').then(()=>Promise.all([ldJs(b+'firebase-auth-compat.js'),ldJs(b+'firebase-firestore-compat.js')])).then(()=>{firebase.initializeApp(FBC);FB={auth:firebase.auth(),db:firebase.firestore()};return FB}).catch(e=>{FBP=null;throw e});return FBP}
+const fbDoc=()=>FB.db.collection('users').doc(AU.id);
+async function fbPush(){if(!AU.fb||!AU.id||!FB)return;try{await fbDoc().set({s:JSON.stringify(blob()),upd:S.u||Date.now(),name:AU.u},{merge:true})}catch(e){}}
+function fbAuthUI(){const A=S.au;return `<div class="auth"><div class="brand">${LG(84)}<div class="wm"><b>home gym</b><small>MY · COACH</small></div><p class="note">התכנית וההתקדמות שלך, בכל טלפון</p></div>
+<section class="card"><p class="note">נכנסים עם חשבון Google. הסיסמה נשארת אצל Google, ואנחנו שומרים רק את נתוני האימון שלך.</p>
+${A.err?`<p class="err" role="alert">${esc(A.err)}</p>`:''}<button class="btn" ${A.busy?'disabled':''} onclick="fbGo()">${A.busy?'מתחבר…':'כניסה עם Google'}</button></section>
+<button class="ghost" style="align-self:center" onclick="guest()">המשך כאורח · נשמר רק במכשיר הזה</button>
+${S.setup?'<p class="note" style="text-align:center">הנתונים שכבר במכשיר יעברו לחשבון.</p>':''}</div>`}
+async function fbGo(){const A=S.au;A.busy=1;A.err='';R();
+  try{const f=await fbInit(),pv=new firebase.auth.GoogleAuthProvider();fbListen(f);
+    try{await f.auth.signInWithPopup(pv)}catch(e){if(e&&/popup-blocked|operation-not-supported/.test(e.code||''))return f.auth.signInWithRedirect(pv);throw e}
+  }catch(e){A.busy=0;const c=e&&e.code||'';A.err=/popup-closed|cancelled-popup/.test(c)?'':(/network/.test(c)||!c?'אין חיבור לשירות הכניסה. בדוק אינטרנט ונסה שוב.':'הכניסה לא הצליחה. נסה שוב.')+(c?' ('+c+')':'');R()}}
+async function fbUser(u){
+  if(!u){if(AU.fb){AU={u:null,id:null,tok:null,db:null,fb:0};try{localStorage.removeItem('fit1auth')}catch(e){}if(S.v!=='work'){S.v='auth';R()}}return}
+  const first=!(A0&&A0.fb&&A0.id===u.uid)&&!(AU.fb&&AU.id===u.uid);
+  AU={u:u.displayName||(u.email||'').split('@')[0]||'משתמש',id:u.uid,tok:null,db:null,fb:1};
+  try{localStorage.setItem('fit1auth',JSON.stringify({fb:1,u:AU.u,id:AU.id}))}catch(e){}
+  S.au.busy=0;S.au.err='';
+  try{const sn=await fbDoc().get(),d=sn.exists?sn.data():null;
+    if(d&&d.s&&S.v!=='work'&&(first||(d.upd||0)>(S.u||0))){ldS(JSON.parse(d.s));try{localStorage.setItem('fit1',JSON.stringify(blob()))}catch(e){}}
+    else if(!d||(S.u||0)>(d.upd||0))fbPush()}catch(e){}
+  if(S.v==='auth'||(S.v==='wiz'&&S.setup))S.v=S.setup?'home':'wiz';R()}
+let FBL=0;function fbListen(f){if(FBL)return;FBL=1;f.auth.getRedirectResult().catch(()=>{S.au.err='הכניסה לא הצליחה. נסה שוב.';R()});f.auth.onAuthStateChanged(fbUser)}
+function fbStart(){if(!AU.fb&&S.v!=='auth')return;fbInit().then(fbListen).catch(()=>{})}
 
 /* ---------- render ---------- */
 function go(v){S.v=v;R()}
