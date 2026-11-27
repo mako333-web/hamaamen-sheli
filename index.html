@@ -420,7 +420,7 @@ function addGoal(){const n=cl($('gn').value);if(!n)return;const id='c'+Date.now(
 function delGoal(id){S.cg=S.cg.filter(g=>g.id!==id);if(S.P.goal===id)S.P.goal='muscle';save();R()}
 function parseNotes(t){const nx=[],nf=[],ng=[],lims=[];let foc='';const NEG=/לא |בלי|שונא|אל /,PRE=/אוהב|רוצה|מעדיף|חשוב|מתמקד|להתמקד|לחזק/,PAIN=/כאב|כואב|פציעה|פצוע|בעיה|רגיש|ניתוח|להימנע/,KW=['ברפי','שכיבות','סקוואט','לאנג','דדליפט','פלאנק','מתח','קפיצות','גומיי','קטלבל','כפיפות בטן'],AR={'ברכ':'k','כתף':'s','כתפיים':'s','גב':'b'},FW={'חזה':'push','כתפיים':'push','גב':'pull','רגליים':'legs','בטן':'core'},ALL=[...X.map(x=>x[0]),...S.cx.map(c=>c.n)];
 t.split(/[.,;!?\n]/).forEach(c=>{if(!c.trim())return;const neg=NEG.test(c),pre=PRE.test(c),pain=PAIN.test(c);KW.forEach(k=>{if(c.includes(k))ALL.forEach(n=>{if(n.includes(k)){if(neg)nx.push(n);else if(pre)nf.push(n)}})});if(c.includes('קרדיו')&&neg)ng.push('cardio');Object.keys(AR).forEach(a=>{if(c.includes(a)&&pain&&!lims.includes(AR[a]))lims.push(AR[a])});if(pre&&!pain&&!neg)Object.keys(FW).forEach(a=>{if(c.includes(a))foc=FW[a]})});
-S.P.nx=[...new Set(nx)];S.P.nf=[...new Set(nf)];S.P.ng=ng;S.P.lims=lims;if(foc)S.P.focus=foc}
+S.P.nx=[...new Set([...nx,...(S.P.fnx||[])])];S.P.nf=[...new Set(nf)].filter(n=>!(S.P.fnx||[]).includes(n));S.P.ng=ng;S.P.lims=[...new Set([...lims,...(S.P.flims||[])])];if(foc){S.P.focus=foc;S.P.focusN=1}else if(S.P.focusN){delete S.P.focus;delete S.P.focusN}}
 function ntSum(){const p=S.P,a=[],M={k:'ברכיים',s:'כתפיים',b:'גב'},F={push:'חזה וכתפיים',pull:'גב',legs:'רגליים',core:'בטן'};if((p.nx||[]).length)a.push('בלי: '+p.nx.join(', '));if((p.nf||[]).length)a.push('יותר: '+p.nf.join(', '));if((p.ng||[]).length)a.push('בלי קרדיו');if((p.lims||[]).length)a.push('שמירה על '+p.lims.map(l=>M[l]).join(', '));if(p.focus)a.push('דגש: '+F[p.focus]);return p.notes?(a.length?a.join(' · '):'לא זיהיתי העדפה. נסה למשל: לא אוהב ברפי.'):''}
 function nsave(g){const e=$('nt');if(e)S.P.notes=e.value.slice(0,500);parseNotes(S.P.notes||'');save();if(g){S.setup=1;S.v='equip';S.first=1}R()}
 
@@ -548,7 +548,7 @@ function awUI(){const T=awT(),L=['dumbbell','kettle','barbell'].filter(k=>S.eq.i
    <div class="awadd"><input id="awn_${k}" class="n" type="number" inputmode="decimal" step="0.5" min="0.5" max="200" placeholder="משקל אחר, בק״ג" aria-label="משקל אחר לטבלה, בק״ג" data-f="awn_${k}" onkeydown="if(event.key==='Enter')awAddV('${k}')"><button class="btn2" data-f="awa_${k}" onclick="awAddV('${k}')">+ הוסף</button></div></div>`})()).join('')}`}
 function saveAw(){awSync()}
 /* ---------- settings ---------- */
-function setP(k,v){S.P[k]=v;save();R()}
+function setP(k,v){S.P[k]=v;if(k==='focus')delete S.P.focusN;save();R()}
 function setLv(i,d){const c=LAD[i],s=Math.max(0,Math.min(c.s.length-1,lstep(i)+d));S.lv[c.n]=s;S.bp[c.s[s]]=0;save();R()}
 function sw(){const v=+$('wk2').value;if(v>20&&v<300){S.wt.push({d:Date.now(),kg:v});S.P.kg=v;save();R()}}
 function setLd(i,k){const v=+$('ld'+i).value;if(v>0){S.ld[k].kg=v;save();R()}}
@@ -705,8 +705,8 @@ function fbs(k,v){const f=w.fb=w.fb||{r:'',pain:[],skip:[]};if(k==='r')f.r=v;els
 function fbSend(){if(w.fbDone)return;const f=w.fb=w.fb||{r:'',pain:[],skip:[]};if(!f.r)f.r='ok';const m=[];
   if(w.k==='run'){const p=S.P.pace||PD[RL()]||450;if(f.r==='easy'){S.P.pace=Math.max(240,p-10);m.push('קצב יעד חדש: '+fmt(S.P.pace)+' לק״מ')}else if(f.r==='hard'){S.P.pace=Math.min(600,p+10);m.push('קצב יעד חדש: '+fmt(S.P.pace)+' לק״מ')}}
   else{Object.keys(w.lr||{}).forEach(k=>{const o=w.lr[k];if(o.t||!S.ld[k])return;let n2=o.nk;if(f.r==='easy'&&o.nk<=o.kg)n2=upW(o.kg,o.ek);else if(f.r==='hard')n2=o.nk>o.kg?o.kg:o.nk===o.kg?dnW(o.kg,o.ek):o.nk;if(n2!==o.nk){S.ld[k].kg=n2;m.push(k+': '+n2+' ק״ג')}});
-   if(f.pain.length){S.P.lims=[...new Set([...(S.P.lims||[]),...f.pain])];m.push('אמנע מעומס על האזור שכאב')}
-   if(f.skip.length){S.P.nx=[...new Set([...(S.P.nx||[]),...f.skip])];S.P.nf=(S.P.nf||[]).filter(x=>!f.skip.includes(x));m.push('הוצאתי: '+f.skip.join(', '))}}
+   if(f.pain.length){S.P.flims=[...new Set([...(S.P.flims||[]),...f.pain])];S.P.lims=[...new Set([...(S.P.lims||[]),...f.pain])];m.push('אמנע מעומס על האזור שכאב')}
+   if(f.skip.length){S.P.fnx=[...new Set([...(S.P.fnx||[]),...f.skip])];S.P.nx=[...new Set([...(S.P.nx||[]),...f.skip])];S.P.nf=(S.P.nf||[]).filter(x=>!f.skip.includes(x));m.push('הוצאתי: '+f.skip.join(', '))}}
   S.fb=[...(S.fb||[]),{d:Date.now(),k:w.k,r:f.r}].slice(-12);const L=S.log[S.log.length-1];if(L)L.fb=f.r;
   if(w.k!=='run'&&volAdj()>0)m.push('שני אימונים קלים ברצף: נוסף סט');if(w.k!=='run'&&volAdj()<0)m.push('שני אימונים קשים ברצף: ירד סט');
   w.fbDone=1;w.fbm=m;save();R()}
@@ -883,7 +883,8 @@ function h3colour(MU){const n=H3.col.count,a=H3.col.array,c=new THREE.Color(),ba
   const P=MU[0],S2=MU[1];for(let i=0;i<n;i++){c.copy(base);let tot=0;H3MU.forEach(k=>{const w=H3.mw[k][i];if(w>.001)tot=Math.max(tot,w)});c.lerp(mus,Math.min(1,tot)*.35);
     S2.forEach(k=>{const w=H3.mw[k][i];if(w>.001)c.lerp(sec,Math.min(1,w))});P.forEach(k=>{const w=H3.mw[k][i];if(w>.001)c.lerp(pri,Math.min(1,w))});a[i*3]=c.r;a[i*3+1]=c.g;a[i*3+2]=c.b}H3.col.needsUpdate=true}
 /* ---- pose maths ---- */
-const _a=new THREE.Vector3(),_b=new THREE.Vector3(),_q=new THREE.Quaternion(),_q2=new THREE.Quaternion(),_q3=new THREE.Quaternion();
+// אם ספריית התלת-ממד לא נטענה (אין רשת / חסימה) האפליקציה ממשיכה לעבוד עם ההדמיה הדו-ממדית
+const _T3=window.THREE,_a=_T3&&new _T3.Vector3(),_b=_T3&&new _T3.Vector3(),_q=_T3&&new _T3.Quaternion(),_q2=_T3&&new _T3.Quaternion(),_q3=_T3&&new _T3.Quaternion();
 const h3d=(a,ab,sd)=>{a*=D2R;ab=(ab||0)*D2R;return new THREE.Vector3(Math.sin(a)*Math.cos(ab),-Math.cos(a)*Math.cos(ab),sd*Math.sin(ab))};
 const h3t=a=>{a*=D2R;return new THREE.Vector3(Math.sin(a),Math.cos(a),0)};
 const h3p=k=>H3.B[k].getWorldPosition(new THREE.Vector3());
@@ -1118,7 +1119,9 @@ function nav(){const o=document.querySelector('nav');if(o)o.remove();
   h.innerHTML=`<div>${[['home','היום',IC.cal],['equip','ציוד',IC.db],['set','הגדרות',IC.set]].map(t=>`<button class="${S.v===t[0]?'on':''}" onclick="go('${t[0]}')" ${S.v===t[0]?'aria-current="page"':''}>${t[2]}<span>${t[1]}</span></button>`).join('')}</div>`;
   document.body.appendChild(h)}
 let lk=null;
-function R(){const fa=document.activeElement,fk=S.fx||(fa&&fa.dataset&&fa.dataset.f);S.fx=null;const y=window.scrollY,k=S.v+(S.v==='wiz'?':'+S.q:'')+(S.v==='work'&&w?':'+w.q+w.ph:'');$('app').innerHTML=({wiz,home,equip,set:settings,work,assess,auth})[S.v]();nav();try{f3mount()}catch(e){};window.scrollTo(0,k===lk?y:0);if(fk&&k===lk){const fe=document.querySelector(`[data-f="${fk}"]`);if(fe)fe.focus({preventScroll:true})}lk=k}
+// טווחי מספרים (6–10) מתהפכים בטקסט מימין לשמאל; עוטפים אותם כבידוד LTR
+const nr=h=>h.replace(/(\d+(?:\.\d+)?)–(\d+(?:\.\d+)?)/g,'\u2066$1–$2\u2069');
+function R(){const fa=document.activeElement,fk=S.fx||(fa&&fa.dataset&&fa.dataset.f);S.fx=null;const y=window.scrollY,k=S.v+(S.v==='wiz'?':'+S.q:'')+(S.v==='work'&&w?':'+w.q+w.ph:'');$('app').innerHTML=nr(({wiz,home,equip,set:settings,work,assess,auth})[S.v]());nav();try{f3mount()}catch(e){};window.scrollTo(0,k===lk?y:0);if(fk&&k===lk){const fe=document.querySelector(`[data-f="${fk}"]`);if(fe)fe.focus({preventScroll:true})}lk=k}
 R();resume();
 </script>
 
