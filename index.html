@@ -151,6 +151,9 @@ details.in>.body{display:flex;flex-direction:column;gap:12px;padding-top:8px}
 .tile{position:relative;min-height:80px;padding:12px;border-radius:14px;background:var(--sf);border:1px solid var(--ln);display:flex;align-items:flex-end;font-weight:500;font-size:14px;line-height:1.3;text-align:start;transition:transform .12s}
 .tile.on{border-color:var(--ac);background:rgba(212,242,74,.07)}
 .ck{position:absolute;top:10px;inset-inline-start:10px;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--ln);display:grid;place-items:center;color:transparent}
+.tic{position:absolute;top:10px;inset-inline-end:10px;width:28px;height:28px;color:var(--mut)}
+.tic svg{width:28px;height:28px}
+.tile.on .tic{color:var(--ac)}
 .tile.on .ck{background:var(--ac);border-color:var(--ac);color:var(--acx)}
 .ck svg{width:12px;height:12px}
 .scan{width:100%;min-height:52px}
@@ -247,13 +250,15 @@ button.row{min-height:44px}
 /* ---------- data ---------- */
 const Q=[
 {k:'goal',t:'מה המטרה העיקרית שלך?',get o(){return[['strength','כוח'],['muscle','בניית שריר'],['fat','חיטוב ושריפת שומן'],['endur','סיבולת'],...S.cg.map(g=>[g.id,g.name])]}},
-{k:'days',t:'כמה ימים בשבוע תתאמן?',o:[[2,'2 ימים'],[3,'3 ימים'],[4,'4 ימים'],[5,'5 ימים']]},
+{k:'days',t:'כמה ימים בשבוע מתאים לך להתאמן?',o:[[2,'2 ימים'],[3,'3 ימים'],[4,'4 ימים'],[5,'5 ימים']]},
 {k:'min',t:'כמה זמן יש לך לאימון?',o:[[20,'20 דקות'],[30,'30 דקות'],[45,'45 דקות'],[60,'60 דקות']]},
 {k:'lvl',t:'מה הרמה שלך?',o:[['b','מתחיל'],['m','בינוני'],['a','מתקדם']]},
 {k:'lim',t:'יש אזור שצריך להימנע ממנו?',o:[['none','אין'],['k','ברכיים'],['s','כתפיים'],['b','גב']]},
-{k:'loc',t:'איפה תתאמן בדרך כלל?',o:[['home','בבית'],['park','בפארק / גינת כושר'],['gym','בחדר כושר'],['travel','בדרך / במלון']]}];
+{k:'loc',t:'איפה האימונים יהיו בדרך כלל?',o:[['home','בבית'],['park','בפארק / גינת כושר'],['gym','בחדר כושר'],['travel','בדרך / במלון']]}];
 const E=[['dumbbell','משקולות יד'],['band','גומיות התנגדות'],['kettle','קטלבל'],['pullup','מתח / מוט תלייה'],['bench','ספסל'],['barbell','מוט ופלטות'],['trx','רצועות TRX'],['ball','כדור כושר'],['rope','חבל קפיצה'],['dip','מקבילים'],['cable','כבלים / פולי'],['machine','מכונות כוח'],['cmach','מכשיר אירובי']];
 // מקום אימון: בבית משתמשים בציוד שסומן; בשאר המקומות בציוד הטיפוסי של המקום
+// equipment icons (24px line icons, decorative: the tile text names the item)
+const EIC={dumbbell:'<path d="M6.5 6.5v11M17.5 6.5v11M3.5 9.5v5M20.5 9.5v5M6.5 12h11"/>',band:'<path d="M8 5c0 7 8 7 8 14M16 5c0 7-8 7-8 14"/><path d="M5.5 5h5M13.5 5h5M5.5 19h5M13.5 19h5"/>',kettle:'<path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/><circle cx="12" cy="15" r="5.5"/>',pullup:'<path d="M3 5h18M6 5v15M18 5v15M10 5v3.5M14 5v3.5"/>',bench:'<path d="M3 10h18M6 10v8M18 10v8M4 18h4M16 18h4"/>',barbell:'<path d="M2 12h20M5 7v10M8 8.5v7M16 8.5v7M19 7v10"/>',trx:'<path d="M12 3v3M12 6l-5 11M12 6l5 11M5 17h4M15 17h4"/>',ball:'<circle cx="12" cy="12" r="8.5"/><path d="M4 10.5c5 2 11 2 16 0"/>',rope:'<path d="M5 4v5M19 4v5M5 9c0 12 14 12 14 0"/>',dip:'<path d="M3 8h7M14 8h7M5 8v12M8 8v12M16 8v12M19 8v12"/>',cable:'<path d="M4 3v18M20 3v18M4 3h16"/><circle cx="12" cy="7" r="2"/><path d="M12 9v6M9 15h6v4H9z"/>',machine:'<path d="M4 3h16M12 3v6"/><rect x="7" y="9" width="10" height="11" rx="1"/><path d="M7 12.5h10M7 16h10"/>',cmach:'<circle cx="7" cy="17" r="3"/><circle cx="17.5" cy="17" r="3"/><path d="M7 17l4-8h5l1.5 8M9 6h4"/>'};
 const LOC=[['home','בית'],['park','פארק'],['gym','חדר כושר'],['travel','בדרך']],LOCEQ={park:['pullup','dip','lowbar','bench','park'],gym:['dumbbell','band','kettle','pullup','bench','barbell','trx','ball','rope','dip','cable','machine','cmach'],travel:['band','home']},LPREF={gym:/barbell|machine|cable|dumbbell|kettle/,park:/pullup|dip|lowbar|park|bench/};
 const GN={push:'דחיפה',pull:'משיכה',legs:'רגליים',core:'ליבה',cardio:'קרדיו'};
 // [שם, ציוד, קבוצה, מגבלות k/s/b, רמה מינימלית m/a]
@@ -428,9 +433,9 @@ function wtop(i){const tot=Q.length+2;return `<div class="row">${i?`<button clas
 function wiz(){if(S.q>Q.length)return notesUI();if(S.q===Q.length)return bodyUI();const q=Q[S.q];
   return `${wtop(S.q)}<h1>${q.t}</h1><div class="opts">${q.o.map((o,i)=>`<button class="opt ${S.P[q.k]===o[0]?'on':''}" aria-pressed="${!!(S.P[q.k]===o[0])}" onclick="pick(${i})"><span>${esc(o[1])}</span>${IC.ck}</button>`).join('')}</div>${q.k==='goal'?dt('g','מטרה אחרת',goalUI()):''}`}
 function pick(i){const q=Q[S.q];S.P[q.k]=q.o[i][0];S.q++;save();R()}
-function bodyUI(){return `${wtop(Q.length)}<h1>כמה אתה שוקל?</h1><p class="note">לחישוב משקלי ההתחלה בתרגילי משקולות. אפשר לדלג.</p><div class="fld"><span>משקל בק״ג</span><input aria-label="משקל בק״ג" id="bk" type="number" inputmode="decimal" step="0.1" value="${S.P.kg||''}"></div><button class="btn" onclick="bsave()">המשך</button>`}
+function bodyUI(){return `${wtop(Q.length)}<h1>מה המשקל שלך?</h1><p class="note">לחישוב משקלי ההתחלה בתרגילי משקולות. אפשר לדלג.</p><div class="fld"><span>משקל בק״ג</span><input aria-label="משקל בק״ג" id="bk" type="number" inputmode="decimal" step="0.1" value="${S.P.kg||''}"></div><button class="btn" onclick="bsave()">המשך</button>`}
 function bsave(){const e=$('bk'),v=e?+e.value:0;if(v>20&&v<300){S.P.kg=v;if(!S.wt.length||S.wt[S.wt.length-1].kg!==v)S.wt.push({d:Date.now(),kg:v})}S.q++;save();R()}
-function notesUI(){return `${wtop(Q.length+1)}<h1>משהו שחשוב שאדע?</h1><p class="note">תרגילים שאתה אוהב או לא, כאבים, מה לחזק. אפשר לדלג.</p><textarea id="nt" rows="4" placeholder="למשל: לא אוהב ברפי. כואבות לי הברכיים. רוצה לחזק גב.">${esc(S.P.notes)}</textarea><button class="btn" onclick="nsave(1)">המשך לציוד</button>`}
+function notesUI(){return `${wtop(Q.length+1)}<h1>משהו שחשוב שאדע?</h1><p class="note">תרגילים אהובים או פחות, כאבים, מה לחזק. אפשר לדלג.</p><textarea id="nt" rows="4" placeholder="למשל: לא אוהב ברפי. כואבות לי הברכיים. רוצה לחזק גב.">${esc(S.P.notes)}</textarea><button class="btn" onclick="nsave(1)">המשך לציוד</button>`}
 function pg(k){S.gnv=$('gn').value;S.gb=k;R()}
 function goalUI(){return `<input aria-label="שם המטרה" id="gn" placeholder="למשל: להתכונן למרתון" value="${esc(S.gnv)}"><div class="fld"><span>לבסס את האימונים על</span><div class="chips">${Object.keys(GBN).map(k=>`<button class="chip ${S.gb===k?'on':''}" aria-pressed="${!!(S.gb===k)}" onclick="pg(${J(k)})">${GBN[k]}</button>`).join('')}</div></div><button class="btn2" onclick="addGoal()">הוסף מטרה</button>${S.cg.length?`<div class="chips">${S.cg.map(g=>`<button class="chip" onclick="delGoal(${J(g.id)})" aria-label="מחק ${esc(g.name)}">${esc(g.name)} ${IC.x}</button>`).join('')}</div>`:''}`}
 function addGoal(){const n=cl($('gn').value);if(!n)return;const id='c'+Date.now();S.cg.push({id,name:n,base:S.gb});S.P.goal=id;S.gnv='';if(S.v==='wiz')S.q++;save();R()}
@@ -438,7 +443,7 @@ function delGoal(id){S.cg=S.cg.filter(g=>g.id!==id);if(S.P.goal===id)S.P.goal='m
 function parseNotes(t){const nx=[],nf=[],ng=[],lims=[];let foc='';const NEG=/לא |בלי|שונא|אל /,PRE=/אוהב|רוצה|מעדיף|חשוב|מתמקד|להתמקד|לחזק/,PAIN=/כאב|כואב|פציעה|פצוע|בעיה|רגיש|ניתוח|להימנע/,KW=['ברפי','שכיבות','סקוואט','לאנג','דדליפט','פלאנק','מתח','קפיצות','גומיי','קטלבל','כפיפות בטן'],AR={'ברכ':'k','כתף':'s','כתפיים':'s','גב':'b'},FW={'חזה':'push','כתפיים':'push','גב':'pull','רגליים':'legs','בטן':'core'},ALL=[...X.map(x=>x[0]),...S.cx.map(c=>c.n)];
 t.split(/[.,;!?\n]/).forEach(c=>{if(!c.trim())return;const neg=NEG.test(c),pre=PRE.test(c),pain=PAIN.test(c);KW.forEach(k=>{if(c.includes(k))ALL.forEach(n=>{if(n.includes(k)){if(neg)nx.push(n);else if(pre)nf.push(n)}})});if(c.includes('קרדיו')&&neg)ng.push('cardio');Object.keys(AR).forEach(a=>{if(c.includes(a)&&pain&&!lims.includes(AR[a]))lims.push(AR[a])});if(pre&&!pain&&!neg)Object.keys(FW).forEach(a=>{if(c.includes(a))foc=FW[a]})});
 S.P.nx=[...new Set([...nx,...(S.P.fnx||[])])];S.P.nf=[...new Set(nf)].filter(n=>!(S.P.fnx||[]).includes(n));S.P.ng=ng;S.P.lims=[...new Set([...lims,...(S.P.flims||[])])];if(foc){S.P.focus=foc;S.P.focusN=1}else if(S.P.focusN){delete S.P.focus;delete S.P.focusN}}
-function ntSum(){const p=S.P,a=[],M={k:'ברכיים',s:'כתפיים',b:'גב'},F={push:'חזה וכתפיים',pull:'גב',legs:'רגליים',core:'בטן'};if((p.nx||[]).length)a.push('בלי: '+p.nx.join(', '));if((p.nf||[]).length)a.push('יותר: '+p.nf.join(', '));if((p.ng||[]).length)a.push('בלי קרדיו');if((p.lims||[]).length)a.push('שמירה על '+p.lims.map(l=>M[l]).join(', '));if(p.focus)a.push('דגש: '+F[p.focus]);return p.notes?(a.length?a.join(' · '):'לא זיהיתי העדפה. נסה למשל: לא אוהב ברפי.'):''}
+function ntSum(){const p=S.P,a=[],M={k:'ברכיים',s:'כתפיים',b:'גב'},F={push:'חזה וכתפיים',pull:'גב',legs:'רגליים',core:'בטן'};if((p.nx||[]).length)a.push('בלי: '+p.nx.join(', '));if((p.nf||[]).length)a.push('יותר: '+p.nf.join(', '));if((p.ng||[]).length)a.push('בלי קרדיו');if((p.lims||[]).length)a.push('שמירה על '+p.lims.map(l=>M[l]).join(', '));if(p.focus)a.push('דגש: '+F[p.focus]);return p.notes?(a.length?a.join(' · '):'לא זיהיתי העדפה. אפשר לכתוב למשל: לא אוהב ברפי.'):''}
 function nsave(g){const e=$('nt');if(e)S.P.notes=e.value.slice(0,500);parseNotes(S.P.notes||'');save();if(g){S.setup=1;S.v='equip';S.first=1}R()}
 
 /* ---------- home ---------- */
@@ -480,7 +485,7 @@ function home(){
   if(S.mv){const m0=new Date(t0.getFullYear(),t0.getMonth()+S.mo,1),nd=new Date(m0.getFullYear(),m0.getMonth()+1,0).getDate();ct=m0.toLocaleDateString('he-IL',{month:'long',year:'numeric'});cg=DN.map(x=>`<span class="dh">${x}</span>`).join('')+'<span></span>'.repeat(m0.getDay());for(let q=1;q<=nd;q++){const d=new Date(m0.getFullYear(),m0.getMonth(),q),j=d.getDay();cg+=`<button class="d sm ${dk(d)===dk(sd)?'on':''} ${dk(d)===dk(t0)?'today':''}" aria-pressed="${dk(d)===dk(sd)}" ${dk(d)===dk(t0)?'aria-current="date"':''} onclick="pd(${m0.getFullYear()},${m0.getMonth()},${q})"><b>${q}</b>${dots(d,j)}</button>`}}
   else{ct=`${ds[0].getDate()}.${ds[0].getMonth()+1} – ${ds[6].getDate()}.${ds[6].getMonth()+1}`;cg=ds.map((d,j)=>`<button class="d ${S.sel===j?'on':''} ${dk(d)===dk(t0)?'today':''}" aria-pressed="${S.sel===j}" ${dk(d)===dk(t0)?'aria-current="date"':''} onclick="sel(${j})"><small>${DN[j]}</small><b>${d.getDate()}</b>${dots(d,j)}</button>`).join('')}
   const sdk=dk(sd);let c='';
-  if(fit.includes(S.sel)){const mm=S.dm[sdk]||S.P.min||45,lc=S.lc[sdk]||S.P.loc||'home',L=plan(mm,lc)[fi]||[];c+=L.length?fitCard(L,mm,sdk,fi,dn('fit',sd),lc):`<section class="card"><h2>אין עדיין תרגילים</h2><p class="note">סמן ציוד כדי שאבנה אימון.</p><button class="btn2" onclick="go('equip')">לציוד שלי</button></section>`}
+  if(fit.includes(S.sel)){const mm=S.dm[sdk]||S.P.min||45,lc=S.lc[sdk]||S.P.loc||'home',L=plan(mm,lc)[fi]||[];c+=L.length?fitCard(L,mm,sdk,fi,dn('fit',sd),lc):`<section class="card"><h2>אין עדיין תרגילים</h2><p class="note">צריך לסמן ציוד כדי שאבנה אימון.</p><button class="btn2" onclick="go('equip')">לציוד שלי</button></section>`}
   if(run.includes(S.sel))c+=runCard(sd,dn('run',sd));
   if(!c)c=`<section class="card"><div class="eye">יום מנוחה</div><h2>אין אימון ביום ${HD[S.sel]}</h2><p class="note">ההתאוששות היא חלק מהאימון.</p><div class="row" style="flex-wrap:wrap;gap:8px"><button class="btn2" onclick="tgd(0,${S.sel})">+ כוח בימי ${DN[S.sel]}</button><button class="btn2" onclick="tgd(1,${S.sel})">+ ריצה בימי ${DN[S.sel]}</button></div></section>`;
   const tm=new Date(t0.getFullYear(),t0.getMonth(),t0.getDate()+1),title=dk(sd)===dk(t0)?'היום':dk(sd)===dk(tm)?'מחר':'יום '+HD[S.sel],wd=S.log.filter(l=>l.d>=s0.getTime()&&l.d<new Date(s0.getFullYear(),s0.getMonth(),s0.getDate()+7).getTime()).length;
@@ -494,19 +499,19 @@ function CE(){return[...new Set(S.cx.filter(c=>!c.k).map(c=>c.e))].map(e=>['cx:'
 function tog(k){S.eq=S.eq.includes(k)?S.eq.filter(x=>x!==k):[...S.eq,k];S.msg='';save();R()}
 function equip(){const all=E.concat(CE()),hasW=['dumbbell','kettle','barbell'].some(k=>S.eq.includes(k));
   return `${hd('הציוד שלי','משקל גוף תמיד כלול')}
-  ${CLD()?`<label class="btn2 scan" tabindex="0" onkeydown="if(event.key==='Enter')this.click()">${IC.cam} צלם או בחר תמונה לזיהוי<input type="file" accept="image/*" onchange="scan(this.files[0]);this.value=''"></label>`:'<p class="note">סמן את הציוד שיש לך. זיהוי ציוד מתמונה יגיע בקרוב.</p>'}
+  ${CLD()?`<label class="btn2 scan" tabindex="0" onkeydown="if(event.key==='Enter')this.click()">${IC.cam} צילום או בחירת תמונה לזיהוי<input type="file" accept="image/*" onchange="scan(this.files[0]);this.value=''"></label>`:'<p class="note">מסמנים את הציוד שיש לך. זיהוי ציוד מתמונה יגיע בקרוב.</p>'}
   <p id="st" class="note" ${S.msg?'':'hidden'}>${esc(S.msg)}</p>${(S.sug||[]).length?`<div class="chips">${S.sug.map((x,i)=>`<button class="chip on" onclick="addSug(${i})">+ ${esc(x.n)}</button>`).join('')}</div>`:''}
-  <div class="tiles">${all.map(e=>`<button class="tile ${S.eq.includes(e[0])?'on':''}" aria-pressed="${S.eq.includes(e[0])}" onclick="tog(${J(e[0])})"><span class="ck">${IC.ck}</span>${esc(e[1])}</button>`).join('')}</div>
+  <div class="tiles">${all.map(e=>`<button class="tile ${S.eq.includes(e[0])?'on':''}" aria-pressed="${S.eq.includes(e[0])}" onclick="tog(${J(e[0])})"><span class="ck">${IC.ck}</span><span class="tic">${SV(EIC[e[0]]||EIC.dumbbell,1.8)}</span>${esc(e[1])}</button>`).join('')}</div>
   ${hasW?dt('aw','המשקלים שיש לי',awUI()):''}${dt('fx','מועדפים ותרגילים',myEq())}${dt('cx','הוספת ציוד משלי',eqUI())}
   ${S.first?`<button class="btn" onclick="S.first=0;S.v='home';S.msg='';R()">בנה לי תכנית</button>`:''}`}
 function shrink(f){return new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>{const i=new Image();i.onload=()=>{const k=Math.min(1,1024/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=Math.round(i.width*k);c.height=Math.round(i.height*k);c.getContext('2d').drawImage(i,0,0,c.width,c.height);c.toBlob(b=>b?ok(b):no(),'image/jpeg',.8)};i.onerror=no;i.src=r.result};r.onerror=no;r.readAsDataURL(f)})}
 function addSug(i){const x=(S.sug||[])[i];if(!x)return;S.cx.push({n:'תרגיל '+GN[x.g]+' עם '+x.n,e:x.n,g:x.g});if(!S.eq.includes('cx:'+x.n))S.eq.push('cx:'+x.n);S.sug.splice(i,1);S.msg='הוספתי: '+x.n+'. אפשר להוסיף לו תרגילים ב״מועדפים ותרגילים״.';save();R()}
-const SCE={not_granted:'צריך לאשר לאפליקציה להשתמש ב-Claude. נסה שוב ואשר בחלון שנפתח.',rate_limited:'יותר מדי ניסיונות ברצף. חכה דקה ונסה שוב.',image_rejected:'התמונה לא נקלטה. נסה תמונה אחרת (צילום רגיל, לא צילום מסך גדול).',images_unavailable:'שליחת תמונות לא זמינה בתצוגה הזו. נסה לפתוח את האפליקציה באתר claude.ai או באפליקציית Claude.',session_expired:'החיבור ל-Claude פג. רענן את הדף ונסה שוב.',sampling_disabled:'השימוש ב-Claude כבוי בחשבון הזה.',refused:'Claude לא הצליח לנתח את התמונה הזו. נסה תמונה אחרת.'};
+const SCE={not_granted:'צריך לאשר לאפליקציה להשתמש ב-Claude. אפשר לנסות שוב ולאשר בחלון שנפתח.',rate_limited:'יותר מדי ניסיונות ברצף. כדאי לחכות דקה ולנסות שוב.',image_rejected:'התמונה לא נקלטה. אפשר לנסות תמונה אחרת (צילום רגיל, לא צילום מסך גדול).',images_unavailable:'שליחת תמונות לא זמינה בתצוגה הזו. אפשר לפתוח את האפליקציה באתר claude.ai או באפליקציית Claude.',session_expired:'החיבור ל-Claude פג. צריך לרענן את הדף ולנסות שוב.',sampling_disabled:'השימוש ב-Claude כבוי בחשבון הזה.',refused:'Claude לא הצליח לנתח את התמונה הזו. אפשר לנסות תמונה אחרת.'};
 async function scan(f){
   if(!f)return;const say=t=>{S.msg=t;const e=$('st');if(e){e.hidden=false;e.textContent=t}};say('מזהה ציוד… זה יכול לקחת עד חצי דקה');
   let sm=null;try{sm=window.claude&&claude.use?await claude.use('sample'):null}catch(e){}
-  if(!sm)return say('זיהוי מתמונה עדיין לא זמין בגרסת האתר. בינתיים סמן את הציוד שלך בלחיצה על הריבועים למטה.');
-  try{const l=await sm.limits();if(l&&!l.images)return say('שליחת תמונות לא זמינה בתצוגה הזו. נסה לפתוח באתר claude.ai או באפליקציית Claude, או סמן ידנית.')}catch(e){}
+  if(!sm)return say('זיהוי מתמונה עדיין לא זמין בגרסת האתר. בינתיים אפשר לסמן את הציוד בלחיצה על הריבועים למטה.');
+  try{const l=await sm.limits();if(l&&!l.images)return say('שליחת תמונות לא זמינה בתצוגה הזו. אפשר לפתוח באתר claude.ai או באפליקציית Claude, או לסמן ידנית.')}catch(e){}
   let b;try{b=await shrink(f)}catch(e){b=f}
   try{
     const r=await sm.json('אתה עוזר לאפליקציית כושר ביתית. הסתכל היטב על כל התמונה, כולל פינות, רקע ופריטים חלקיים או מונחים על הרצפה, וזהה כל ציוד כושר שמופיע בה. לכל פריט תן מפתח מתוך הרשימה: dumbbell (משקולות יד מכל סוג, כולל מתכווננות), band (גומיות התנגדות או מיני-בנד), kettle (קטלבל), pullup (מוט מתח, מוט תלייה או מתקן מתח), bench (ספסל אימון או ספסל שטוח/מתכוונן), barbell (מוט אולימפי או מוט קצר עם פלטות, או פלטות לבד), trx (רצועות תלייה), ball (כדור פיזיו או כדור כושר גדול), rope (חבל קפיצה), dip (מקבילים או מתקן מקבילים), cable (כבלים, פולי או קרוס אובר), machine (מכונות כוח עם משקולות, כולל לג פרס), cmach (הליכון, אופני כושר, אליפטיקל או מכשיר חתירה). אם יש ציוד כושר שלא מתאים לאף מפתח (למשל מזרן, גלגלת בטן), תן לו מפתח other, שם קצר בעברית, וקבוצת שרירים עיקרית מתוך push, pull, legs, core, cardio. החזר אך ורק JSON בצורה: {"items":[{"key":"dumbbell","name":"משקולות יד"},{"key":"other","name":"גלגלת בטן","group":"core"}],"seen":"תיאור קצר בעברית של מה שרואים בתמונה"}. אם אין ציוד כושר בכלל החזר {"items":[],"seen":"..."}.',{images:[b],cache:false,modelTier:'complex'});
@@ -515,9 +520,9 @@ async function scan(f){
     const have=new Set(CE().map(e=>e[1]));
     S.sug=it.filter(x=>x&&x.key==='other'&&x.name).map(x=>({n:cl(x.name),g:GN[x.group]?x.group:'core'})).filter(x=>x.n&&!have.has(x.n)).slice(0,6);
     S.eq=[...new Set([...S.eq,...ids])];save();
-    S.msg=(ids.length?'זוהה: '+ids.map(k=>E.find(e=>e[0]===k)[1]).join(', ')+'.':S.sug.length?'מצאתי ציוד שלא ברשימה. אפשר להוסיף אותו בלחיצה.':'לא זיהיתי ציוד כושר בתמונה.'+(r&&r.seen?' מה שראיתי: '+String(r.seen).slice(0,160)+'.':'')+' נסה תמונה מרחוק יותר ובאור טוב, או סמן ידנית.');
+    S.msg=(ids.length?'זוהה: '+ids.map(k=>E.find(e=>e[0]===k)[1]).join(', ')+'.':S.sug.length?'מצאתי ציוד שלא ברשימה. אפשר להוסיף אותו בלחיצה.':'לא זיהיתי ציוד כושר בתמונה.'+(r&&r.seen?' מה שראיתי: '+String(r.seen).slice(0,160)+'.':'')+' אפשר לנסות תמונה מרחוק יותר ובאור טוב, או לסמן ידנית.');
     R();
-  }catch(e){say((SCE[e&&e.code]||'הזיהוי נכשל. נסה שוב או סמן ידנית.')+(e&&e.code?' (קוד: '+e.code+')':''))}
+  }catch(e){say((SCE[e&&e.code]||'הזיהוי נכשל. אפשר לנסות שוב או לסמן ידנית.')+(e&&e.code?' (קוד: '+e.code+')':''))}
 }
 function ge(g){S.eg=g;S.enm=$('en')?cl($('en').value):'';S.exm=$('ex')?exs($('ex').value):'';R()}
 function eqUI(){return `<input aria-label="שם הציוד" id="en" placeholder="שם הציוד, למשל כבלים" value="${esc(S.enm)}"><input aria-label="תרגילים לציוד הזה" id="ex" placeholder="תרגילים, מופרדים בפסיק (לא חובה)" value="${esc(S.exm)}"><div class="chips">${Object.keys(GN).map(g=>`<button class="chip ${S.eg===g?'on':''}" aria-pressed="${!!(S.eg===g)}" onclick="ge(${J(g)})">${GN[g]}</button>`).join('')}</div><button class="btn2" onclick="addEq()">הוסף ציוד</button>${CE().length?`<div class="chips">${CE().map(e=>`<button class="chip" onclick="delEq(${J(e[1])})" aria-label="מחק ${esc(e[1])}">${esc(e[1])} ${IC.x}</button>`).join('')}</div>`:''}`}
@@ -550,14 +555,14 @@ function awIx(k,v){return awT()[k].findIndex(r=>r[0]===v)}
 function awQuick(k,v){const T=awT(),i=awIx(k,v);if(i>=0&&T[k][i][1]>0){T[k].splice(i,1);say(`הוסר ${v} ק״ג`)}else{if(i>=0)T[k][i][1]=k==='kettle'?1:2;else T[k].push([v,k==='kettle'?1:2]);awNorm(k);say(`נוסף ${v} ק״ג`)}S.fx=`awq_${k}_${v}`;awSync()}
 function awNum(x){const v=parseFloat(String(x).replace(',','.'));return v>0&&v<=200?Math.round(v*2)/2:0}
 function awSet(k,i,x){const v=awNum(x),T=awT();if(!v){say('משקל לא תקין, אפשר בין 0.5 ל־200 ק״ג');R();return}T[k][i][0]=v;awNorm(k);S.fx=`aww_${k}_${awIx(k,v)}`;say(`עודכן ל־${v} ק״ג`);awSync()}
-function awAddV(k){const e=$('awn_'+k),v=awNum(e&&e.value);S.fx='awn_'+k;if(!v){say('הקלד משקל בין 0.5 ל־200 ק״ג');if(e)e.focus();return}const T=awT(),i=awIx(k,v);if(i>=0&&T[k][i][1]>0){say(`${v} ק״ג כבר בטבלה`);if(e){e.value='';e.focus()}return}if(i>=0)T[k][i][1]=k==='kettle'?1:2;else T[k].push([v,k==='kettle'?1:2]);awNorm(k);say(`נוסף ${v} ק״ג`);awSync()}
+function awAddV(k){const e=$('awn_'+k),v=awNum(e&&e.value);S.fx='awn_'+k;if(!v){say('יש להקליד משקל בין 0.5 ל־200 ק״ג');if(e)e.focus();return}const T=awT(),i=awIx(k,v);if(i>=0&&T[k][i][1]>0){say(`${v} ק״ג כבר בטבלה`);if(e){e.value='';e.focus()}return}if(i>=0)T[k][i][1]=k==='kettle'?1:2;else T[k].push([v,k==='kettle'?1:2]);awNorm(k);say(`נוסף ${v} ק״ג`);awSync()}
 function awUI(){const T=awT(),L=['dumbbell','kettle','barbell'].filter(k=>S.eq.includes(k)),nm=k=>E.find(e=>e[0]===k)[1];
   return `<p class="note">מסמנים את המשקלים שיש בבית, ובטבלה מעדכנים כמה יחידות יש מכל אחד. המאמן יציע רק משקלים שקיימים אצלך.</p>${L.map(k=>k==='barbell'?`<div class="awt"><h3 class="awk">${nm(k)}</h3>
    <div class="awr2"><b>משקל המוט</b>${awSt('משקל המוט',T.bar,'awBar(-1)','awBar(1)',' ק״ג','awbar')}</div>
    <table class="awtb"><caption class="sr">פלטות: כמה זוגות יש מכל משקל</caption><thead><tr><th scope="col">פלטה</th><th scope="col">זוגות</th></tr></thead><tbody>${PL.map(p=>`<tr><th scope="row">${p} ק״ג</th><td>${awSt('זוגות של '+p+' ק״ג',T.pl[p]||0,`awP(${p},-1)`,`awP(${p},1)`,'',`awp_${p}`)}</td></tr>`).join('')}</tbody></table>
-   <p class="note">${(S.aw.barbell||[]).length?`אפשר להרכיב ${S.aw.barbell[0]}–${S.aw.barbell[S.aw.barbell.length-1]} ק״ג על המוט`:'סמן כמה זוגות פלטות יש לך'}</p></div>`
+   <p class="note">${(S.aw.barbell||[]).length?`אפשר להרכיב ${S.aw.barbell[0]}–${S.aw.barbell[S.aw.barbell.length-1]} ק״ג על המוט`:'מסמנים כמה זוגות פלטות יש לך'}</p></div>`
   :(()=>{const R0=T[k],on=v=>R0.some(r=>r[0]===v&&r[1]>0),tot=R0.reduce((a,r)=>a+r[1],0);return `<div class="awt"><h3 class="awk">${nm(k)}</h3>
-   <span class="eye" id="awqh_${k}">הקש על המשקלים שיש לך (ק״ג)</span>
+   <span class="eye" id="awqh_${k}">מקישים על המשקלים שיש לך (ק״ג)</span>
    <div class="chips" role="group" aria-labelledby="awqh_${k}">${AWQ[k].map(v=>`<button class="chip ${on(v)?'on':''}" aria-pressed="${on(v)}" data-f="awq_${k}_${v}" onclick="awQuick('${k}',${v})">${v}</button>`).join('')}</div>
    ${R0.length?`<table class="awtb"><caption class="sr">${nm(k)}: המשקלים שלי</caption><thead><tr><th scope="col">משקל (ק״ג)</th><th scope="col" class="cq">כמה ${awU(k)}</th><th scope="col" class="cx"><span class="sr">הסרה</span></th></tr></thead><tbody>
    ${R0.map((r,i)=>`<tr><td><input class="n awin" type="number" inputmode="decimal" step="0.5" min="0.5" max="200" value="${r[0]}" aria-label="משקל בק״ג, שורה ${i+1}" data-f="aww_${k}_${i}" onchange="awSet('${k}',${i},this.value)"></td><td class="cq">${awSt(`כמות של ${r[0]} ק״ג`,r[1],`awQ('${k}',${i},-1)`,`awQ('${k}',${i},1)`,'',`awc_${k}_${i}`)}</td><td class="cx"><button class="sb" onclick="awDel('${k}',${i})" aria-label="הסר ${r[0]} ק״ג" data-f="awd_${k}_${i}">${IC.trash}</button></td></tr>`).join('')}</tbody></table>
@@ -570,7 +575,7 @@ function setLv(i,d){const c=LAD[i],s=Math.max(0,Math.min(c.s.length-1,lstep(i)+d
 function sw(){const v=+$('wk2').value;if(v>20&&v<300){S.wt.push({d:Date.now(),kg:v});S.P.kg=v;save();R()}}
 function setLd(i,k){const v=+$('ld'+i).value;if(v>0){S.ld[k].kg=v;save();R()}}
 function acctUI(){return `<section class="card"><div class="row"><span class="ic" style="font-weight:800">${AU.u?esc(AU.u[0].toUpperCase()):IC.set}</span><div class="grow"><b>${AU.u?esc(AU.u):'אורח'}</b><div class="note">${AU.u?'מסונכרן בין מכשירים':'נשמר רק במכשיר הזה'}</div></div>${AU.u||CLD()||FBON()?`<button class="btn2" onclick="${AU.u?'logout()':'logout(1)'}">${AU.u?'התנתק':'התחבר'}</button>`:''}</div>
-<p class="note">${AU.u?'':'כדי לא לאבד נתונים או להעביר אותם לטלפון אחר: שמור גיבוי, ובמכשיר החדש בחר ״שחזר מגיבוי״.'}</p><div class="row"><button class="btn2 grow" onclick="bkOut()">שמור גיבוי</button><label class="btn2 grow" tabindex="0" style="text-align:center" onkeydown="if(event.key==='Enter')this.click()">שחזר מגיבוי<input type="file" accept=".json,application/json" onchange="bkIn(this.files[0]);this.value=''"></label></div><p id="bkm" class="note" hidden></p></section>`}
+<p class="note">${AU.u?'':'כדי לא לאבד נתונים או להעביר אותם לטלפון אחר: שומרים גיבוי, ובמכשיר החדש בוחרים ״שחזר מגיבוי״.'}</p><div class="row"><button class="btn2 grow" onclick="bkOut()">שמור גיבוי</button><label class="btn2 grow" tabindex="0" style="text-align:center" onkeydown="if(event.key==='Enter')this.click()">שחזר מגיבוי<input type="file" accept=".json,application/json" onchange="bkIn(this.files[0]);this.value=''"></label></div><p id="bkm" class="note" hidden></p></section>`}
 function bkOut(){try{const b=new Blob([JSON.stringify({app:'hamaamen',v:1,at:Date.now(),s:blob()})],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='hamaamen-backup-'+dk(new Date())+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}catch(e){const m=$('bkm');if(m){m.hidden=false;m.textContent='שמירת הגיבוי נכשלה בדפדפן הזה.'}}}
 function bkIn(f){if(!f)return;const r=new FileReader(),m=t=>{const e=$('bkm');if(e){e.hidden=false;e.textContent=t}};r.onload=()=>{try{const o=JSON.parse(r.result),d=o&&o.app==='hamaamen'?o.s:null;if(!d||typeof d!=='object'||!d.P)return m('הקובץ הזה לא גיבוי של המאמן שלי.');ldS(d);save();S.v=S.setup?'set':'wiz';R();const e=$('bkm');if(e){e.hidden=false;e.textContent='הגיבוי שוחזר.'}}catch(e){m('לא הצלחתי לקרוא את הקובץ.')}};r.onerror=()=>m('לא הצלחתי לקרוא את הקובץ.');r.readAsText(f)}
 function settings(){const P=S.P,chs=(k,o)=>`<div class="chips">${o.map(x=>`<button class="chip ${P[k]===x[0]?'on':''}" aria-pressed="${!!(P[k]===x[0])}" onclick="setP(${J(k)},${J(x[0])})">${esc(x[1])}</button>`).join('')}</div>`,seg=(k,o)=>`<div class="seg">${o.map(x=>`<button class="${P[k]===x[0]?'on':''}" aria-pressed="${!!(P[k]===x[0])}" onclick="setP(${J(k)},${J(x[0])})">${x[1]}</button>`).join('')}</div>`,days=k=>`<div class="wk">${DN.map((m,j)=>`<button class="d ${S.cal[K[k]].includes(j)?'p'+k:''}" aria-pressed="${S.cal[K[k]].includes(j)}" onclick="tgd(${k},${j})"><b>${m}</b></button>`).join('')}</div>`,mn=P.min||45,pc=P.pace||PD[RL()]||450,l=S.wt[S.wt.length-1],f=S.wt[0],ks=Object.keys(S.ld);
@@ -596,9 +601,9 @@ function settings(){const P=S.P,chs=(k,o)=>`<div class="chips">${o.map(x=>`<butt
   </section></div>
   ${dt('nt','הערות חופשיות',`<textarea id="nt" rows="4" placeholder="למשל: לא אוהב ברפי. כואבות לי הברכיים.">${esc(P.notes)}</textarea>${P.notes?`<p class="note">${esc(ntSum())}</p>`:''}<button class="btn2" onclick="nsave(0)">שמור והתאם</button>`)}
   ${dt('cg','מטרה משלי',goalUI())}
-  ${dt('lv','שלבי התקדמות במשקל גוף',`<p class="note">כשאתה מגיע לראש טווח החזרות בכל הסטים פעמיים, עולים לגרסה קשה יותר. אם לא מגיעים לתחתית הטווח פעמיים, יורדים שלב. אפשר גם לשנות ידנית.</p><div>${LAD.map((c,i)=>{const s=lstep(i);return `<div class="er"><b>${esc(c.n)}<div class="note">${esc(c.s[s])} · שלב ${s+1}/${c.s.length}</div></b><div class="stp"><button onclick="setLv(${i},-1)" aria-label="שלב קל יותר" ${s?'':'disabled'}>−</button><span class="n">${s+1}</span><button onclick="setLv(${i},1)" aria-label="שלב קשה יותר" ${s<c.s.length-1?'':'disabled'}>+</button></div></div>`}).join('')}</div>`)}
+  ${dt('lv','שלבי התקדמות במשקל גוף',`<p class="note">כשמגיעים לראש טווח החזרות בכל הסטים פעמיים, עולים לגרסה קשה יותר. אם לא מגיעים לתחתית הטווח פעמיים, יורדים שלב. אפשר גם לשנות ידנית.</p><div>${LAD.map((c,i)=>{const s=lstep(i);return `<div class="er"><b>${esc(c.n)}<div class="note">${esc(c.s[s])} · שלב ${s+1}/${c.s.length}</div></b><div class="stp"><button onclick="setLv(${i},-1)" aria-label="שלב קל יותר" ${s?'':'disabled'}>−</button><span class="n">${s+1}</span><button onclick="setLv(${i},1)" aria-label="שלב קשה יותר" ${s<c.s.length-1?'':'disabled'}>+</button></div></div>`}).join('')}</div>`)}
   ${ks.length?dt('ld','משקלי עבודה',`<p class="note">מה שיוצע בפעם הבאה. אפשר לתקן.</p><div>${ks.map((k,i)=>`<div class="er"><b>${esc(k)}</b><input aria-label="${esc(k)}: משקל עבודה בק״ג" id="ld${i}" class="n" type="number" step="0.5" value="${S.ld[k].kg}" style="width:84px;flex:none"><button class="btn2" onclick="setLd(${i},${J(k)})">עדכן</button></div>`).join('')}</div>`):''}
-  <p class="note">${mfree()?'':'בזמן אימון, כפתור האוזניות מסיים סט או מדלג על מנוחה (כשאין מוזיקה ברקע). '}זו מסגרת כללית ולא ייעוץ אישי: בכאב חד או מצב רפואי, עצור והתייעץ עם רופא.</p>
+  <p class="note">${mfree()?'':'בזמן אימון, כפתור האוזניות מסיים סט או מדלג על מנוחה (כשאין מוזיקה ברקע). '}זו מסגרת כללית ולא ייעוץ אישי: בכאב חד או מצב רפואי, יש לעצור ולהתייעץ עם רופא.</p>
   <button class="ghost" onclick="S.q=0;S.v='wiz';R()">לעבור שוב על השאלון</button>`}
 
 /* ---------- assessment ---------- */
@@ -615,7 +620,7 @@ function assess(){const P=S.P,ch=(k,L)=>`<div class="chips">${L.map((l,i)=>`<but
   <p class="note">את התוצאה של כל מבחן מזינים במנוחה שאחריו.</p><button class="btn" onclick="startAs()">${IC.play} התחל</button>`}
 function startAs(){pf();const k=S.P.kg;if(k>20&&k<300&&(!S.wt.length||S.wt[S.wt.length-1].kg!==k))S.wt.push({d:Date.now(),kg:k});if(S.P.rc!=null)S.P.rlvl=S.P.rc<3?'b':S.P.rc<6?'m':'a';save();start(2,0,S.P.min||45)}
 function loadTest(){const o=[['סקוואט גביע','dumbbell'],['סקוואט עם מוט','barbell'],['סקוואט גביע בקטלבל','kettle']].find(a=>S.eq.includes(a[1]));return o?[{name:'מבחן עומס: '+o[0],ln:o[0],ek:o[1],set:1,reps:'8–12',t:false,rest:120,gr:'test',w:1,lo:8,hi:12,tips:['משקל שמאפשר 8–12 חזרות ועוד 1–2 במאגר','זו הערכה מסט בינוני, לא בדיקת מקסימום']}]:[]}
-function assessPlan(mm){const T=(name,key,dur,tips)=>({name:'מבחן: '+name,set:1,reps:dur?dur+' שנ׳':'מקס׳',t:!!dur,dur,rest:90,gr:'test',test:1,key,tips});return[{name:'חימום',set:1,reps:'5 דק׳',t:true,dur:300,rest:0,gr:'warm',tips:WU.tips},T('שכיבות סמיכה','pu',0,['שכיבות מלאות ברצף עד שהטכניקה נשברת','גב ישר, מרפקים בזווית נוחה']),T('סקוואט משקל גוף','sq',60,['כמה שיותר חזרות ב־60 שניות, בטכניקה נקייה']),T('גשר ישבן','br',60,['כמה שיותר חזרות ב־60 שניות','דחוף דרך העקבים וכווץ ישבן למעלה']),T('פלאנק (לא חובה)','pl',120,['לחץ סיימתי כשהצורה נשברת']),...loadTest(),...(plan(mm)[0]||[]),{name:'שחרור ומתיחות',set:1,reps:'5 דק׳',t:true,dur:300,rest:0,gr:'warm',tips:CD.tips}]}
+function assessPlan(mm){const T=(name,key,dur,tips)=>({name:'מבחן: '+name,set:1,reps:dur?dur+' שנ׳':'מקס׳',t:!!dur,dur,rest:90,gr:'test',test:1,key,tips});return[{name:'חימום',set:1,reps:'5 דק׳',t:true,dur:300,rest:0,gr:'warm',tips:WU.tips},T('שכיבות סמיכה','pu',0,['שכיבות מלאות ברצף עד שהטכניקה נשברת','גב ישר, מרפקים בזווית נוחה']),T('סקוואט משקל גוף','sq',60,['כמה שיותר חזרות ב־60 שניות, בטכניקה נקייה']),T('גשר ישבן','br',60,['כמה שיותר חזרות ב־60 שניות','דחוף דרך העקבים וכווץ ישבן למעלה']),T('פלאנק (לא חובה)','pl',120,['לוחצים "סיימתי" כשהטכניקה נשברת']),...loadTest(),...(plan(mm)[0]||[]),{name:'שחרור ומתיחות',set:1,reps:'5 דק׳',t:true,dur:300,rest:0,gr:'warm',tips:CD.tips}]}
 function applyAssess(r){const g=k=>+r[k]||0,f=(v,t)=>v<t[0]?0:v<t[1]?1:2,sc=f(g('pu'),[8,20])+f(g('sq'),[25,45])+f(g('br'),[30,50])+[0,0,1,2][S.P.exp||0]+(S.P.act===2?1:0);S.P.lvl=sc<=2?'b':sc<=5?'m':'a';S.P.assess={d:Date.now(),pu:g('pu'),sq:g('sq'),br:g('br'),pl:g('pl'),sc}}
 
 /* ---------- workout engine ---------- */
@@ -1127,7 +1132,7 @@ async function authGo(){
     AU={u:un,id,tok,db};const a=JSON.stringify({u:un,id,t:tok});try{(A.st?localStorage:sessionStorage).setItem('fit1auth',a)}catch(x){}
     try{localStorage.setItem('fit1',JSON.stringify(blob()))}catch(x){}
     S.au={m:'in',u:'',st:1,err:'',busy:0};S.v=S.setup?'home':'wiz';R();
-  }catch(x){fail('משהו השתבש. בדוק חיבור ונסה שוב.')}
+  }catch(x){fail('משהו השתבש. כדאי לבדוק את החיבור ולנסות שוב.')}
 }
 async function resume(){if(FBON())return fbStart();if(!AU.u)return;try{const db=await getDb();if(!db)return;const d=(await db.collection('accounts').doc(AU.id).get()).data();
   if(!d||!(d.sess||[]).includes(await sha(AU.tok))){try{localStorage.removeItem('fit1auth');sessionStorage.removeItem('fit1auth')}catch(e){}AU={u:null,id:null,tok:null,db:AU.db};if(S.v!=='work'){S.v='auth';R()}return}
@@ -1149,7 +1154,7 @@ ${S.setup?'<p class="note" style="text-align:center">הנתונים שכבר ב�
 async function fbGo(){const A=S.au;A.busy=1;A.err='';R();
   try{const f=await fbInit(),pv=new firebase.auth.GoogleAuthProvider();fbListen(f);
     try{await f.auth.signInWithPopup(pv)}catch(e){if(e&&/popup-blocked|operation-not-supported/.test(e.code||''))return f.auth.signInWithRedirect(pv);throw e}
-  }catch(e){A.busy=0;const c=e&&e.code||'';A.err=/popup-closed|cancelled-popup/.test(c)?'':(/network/.test(c)||!c?'אין חיבור לשירות הכניסה. בדוק אינטרנט ונסה שוב.':'הכניסה לא הצליחה. נסה שוב.')+(c?' ('+c+')':'');R()}}
+  }catch(e){A.busy=0;const c=e&&e.code||'';A.err=/popup-closed|cancelled-popup/.test(c)?'':(/network/.test(c)||!c?'אין חיבור לשירות הכניסה. כדאי לבדוק את האינטרנט ולנסות שוב.':'הכניסה לא הצליחה. אפשר לנסות שוב.')+(c?' ('+c+')':'');R()}}
 async function fbUser(u){
   if(!u){if(AU.fb){AU={u:null,id:null,tok:null,db:null,fb:0};try{localStorage.removeItem('fit1auth')}catch(e){}if(S.v!=='work'){S.v='auth';R()}}return}
   const first=!(A0&&A0.fb&&A0.id===u.uid)&&!(AU.fb&&AU.id===u.uid);
@@ -1160,7 +1165,7 @@ async function fbUser(u){
     if(d&&d.s&&S.v!=='work'&&(first||(d.upd||0)>(S.u||0))){ldS(JSON.parse(d.s));try{localStorage.setItem('fit1',JSON.stringify(blob()))}catch(e){}}
     else if(!d||(S.u||0)>(d.upd||0))fbPush()}catch(e){}
   if(S.v==='auth'||(S.v==='wiz'&&S.setup))S.v=S.setup?'home':'wiz';R()}
-let FBL=0;function fbListen(f){if(FBL)return;FBL=1;f.auth.getRedirectResult().catch(()=>{S.au.err='הכניסה לא הצליחה. נסה שוב.';R()});f.auth.onAuthStateChanged(fbUser)}
+let FBL=0;function fbListen(f){if(FBL)return;FBL=1;f.auth.getRedirectResult().catch(()=>{S.au.err='הכניסה לא הצליחה. אפשר לנסות שוב.';R()});f.auth.onAuthStateChanged(fbUser)}
 function fbStart(){if(!AU.fb&&S.v!=='auth')return;fbInit().then(fbListen).catch(()=>{})}
 
 /* ---------- render ---------- */
