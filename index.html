@@ -489,7 +489,7 @@ function CE(){return[...new Set(S.cx.filter(c=>!c.k).map(c=>c.e))].map(e=>['cx:'
 function tog(k){S.eq=S.eq.includes(k)?S.eq.filter(x=>x!==k):[...S.eq,k];S.msg='';save();R()}
 function equip(){const all=E.concat(CE()),hasW=['dumbbell','kettle','barbell'].some(k=>S.eq.includes(k));
   return `${hd('הציוד שלי','משקל גוף תמיד כלול')}
-  <label class="btn2 scan" tabindex="0" onkeydown="if(event.key==='Enter')this.click()">${IC.cam} צלם או בחר תמונה לזיהוי<input type="file" accept="image/*" onchange="scan(this.files[0]);this.value=''"></label>
+  ${CLD()?`<label class="btn2 scan" tabindex="0" onkeydown="if(event.key==='Enter')this.click()">${IC.cam} צלם או בחר תמונה לזיהוי<input type="file" accept="image/*" onchange="scan(this.files[0]);this.value=''"></label>`:'<p class="note">סמן את הציוד שיש לך. זיהוי ציוד מתמונה יגיע בקרוב.</p>'}
   <p id="st" class="note" ${S.msg?'':'hidden'}>${esc(S.msg)}</p>${(S.sug||[]).length?`<div class="chips">${S.sug.map((x,i)=>`<button class="chip on" onclick="addSug(${i})">+ ${esc(x.n)}</button>`).join('')}</div>`:''}
   <div class="tiles">${all.map(e=>`<button class="tile ${S.eq.includes(e[0])?'on':''}" aria-pressed="${S.eq.includes(e[0])}" onclick="tog(${J(e[0])})"><span class="ck">${IC.ck}</span>${esc(e[1])}</button>`).join('')}</div>
   ${hasW?dt('aw','המשקלים שיש לי',awUI()):''}${dt('fx','מועדפים ותרגילים',myEq())}${dt('cx','הוספת ציוד משלי',eqUI())}
@@ -581,7 +581,7 @@ function settings(){const P=S.P,chs=(k,o)=>`<div class="chips">${o.map(x=>`<butt
   <div class="grp"><h3>שליטה בזמן אימון (גם עם מוזיקה)</h3><section class="card list">
    <div class="set"><div class="row"><b>ידיים חופשיות<div class="note">כל סט נגמר לבד, עם צפצוף ספירה לאחור</div></b><div class="seg" style="width:120px"><button class="${P.hf?'':'on'}" onclick="setP('hf',0)">כבוי</button><button class="${P.hf?'on':''}" onclick="setP('hf',1)">פעיל</button></div></div>${P.hf?`<div class="fld"><span>שניות לחזרה</span><div class="chips">${[2.5,3,3.5,4,5].map(v=>`<button class="chip ${(P.rs||3.5)===v?'on':''}" onclick="setP('rs',${v})">${v}</button>`).join('')}</div></div>`:''}</div>
    <div class="set"><div class="row"><b>נגיעה בכל המסך<div class="note">נגיעה בכל מקום מסיימת סט או מדלגת על מנוחה</div></b><div class="seg" style="width:120px"><button class="${P.tap?'':'on'}" onclick="setP('tap',0)">כבוי</button><button class="${P.tap?'on':''}" onclick="setP('tap',1)">פעיל</button></div></div></div>
-   <div class="set"><div class="row"><b>הכרזה קולית<div class="note">המאמן מקריא באוזניות את התרגיל, הסט והמנוחה</div></b><div class="seg" style="width:120px"><button class="${P.vc?'':'on'}" onclick="setP('vc',0)">כבוי</button><button class="${P.vc?'on':''}" onclick="setP('vc',1);say('הכרזה קולית פעילה')">פעיל</button></div></div></div>
+   <div class="set"><div class="row"><b>הכרזה קולית<div class="note">${canSpeak()?'המאמן מקריא באוזניות את התרגיל, הסט והמנוחה':'במכשיר הזה אין קול בעברית, אז יישמעו רק צפצופים. אפשר להוסיף קול עברי בהגדרות הנגישות של הטלפון.'}</div></b><div class="seg" style="width:120px"><button class="${P.vc?'':'on'}" onclick="setP('vc',0)">כבוי</button><button class="${P.vc?'on':''}" onclick="setP('vc',1);speak('הכרזה קולית פעילה')">פעיל</button></div></div></div>
   </section></div>
   <div class="grp"><h3>לוח שבועי</h3><section class="card list"><div class="set"><b>ימי כוח</b>${days(0)}</div><div class="set"><b>ימי ריצה</b>${days(1)}</div></section></div>
   <div class="grp"><h3>ריצה וגוף</h3><section class="card list">
@@ -629,22 +629,28 @@ function silence(){const n=8000,b=new Uint8Array(44+n),dv=new DataView(b.buffer)
   t(0,'RIFF');dv.setUint32(4,36+n,true);t(8,'WAVEfmt ');dv.setUint32(16,16,true);dv.setUint16(20,1,true);dv.setUint16(22,1,true);dv.setUint32(24,8000,true);dv.setUint32(28,8000,true);dv.setUint16(32,1,true);dv.setUint16(34,8,true);t(36,'data');dv.setUint32(40,n,true);b.fill(128,44);
   let s='';b.forEach(x=>s+=String.fromCharCode(x));return 'data:audio/wav;base64,'+btoa(s)}
 function beep(f,d){try{const o=ctx.createOscillator(),g=ctx.createGain();o.frequency.value=f;g.gain.value=.25;o.connect(g);g.connect(ctx.destination);o.start();o.stop(ctx.currentTime+d)}catch(e){}try{navigator.vibrate&&navigator.vibrate(80)}catch(e){}}
-function say(t){if(!S.P.vc||!t)return;try{const u=new SpeechSynthesisUtterance(t);u.lang='he-IL';const v=speechSynthesis.getVoices().find(v=>/^he|^iw/i.test(v.lang));if(v)u.voice=v;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
+/* הכרזה קולית: קול עברי בלבד. רשימת הקולות נטענת באיחור בחלק מהדפדפנים */
+let HEV=null;const heVoice=()=>{try{if(!HEV)HEV=speechSynthesis.getVoices().find(v=>/^(he|iw)/i.test(v.lang))||null}catch(e){}return HEV};
+try{speechSynthesis.addEventListener('voiceschanged',()=>{HEV=null;heVoice();if(S.v==='set')R()})}catch(e){}
+const canSpeak=()=>'speechSynthesis' in window&&!!heVoice();
+function speak(t){if(!S.P.vc||!t)return;try{const v=heVoice();if(!v)return;const u=new SpeechSynthesisUtterance(t);u.lang=v.lang;u.voice=v;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
+/* מוזיקה ברקע (iPhone): במצב ידיים חופשיות/נגיעה הצפצופים מתערבבים עם המוזיקה במקום לעצור אותה */
+function audioMode(){try{if(navigator.audioSession)navigator.audioSession.type=mfree()?'ambient':'playback'}catch(e){}}
 function sayCur(){if(!w||w.ph==='done')return'';const c=cur(),s=st();return c.name+(s.wu?', סט חימום':c.set>1?', סט '+s.s+' מתוך '+c.set:'')+(c.reps&&!c.t?', '+String(c.reps).replace('–',' עד ')+' חזרות':'')}
 function ms(){if(!('mediaSession' in navigator)||!w||w.ph==='done'||mfree())return;
   try{const m=navigator.mediaSession;m.metadata=new MediaMetadata({title:cur().name,artist:st().wu?'סט חימום':'סט '+st().s+' מתוך '+cur().set,album:'המאמן שלי'});m.playbackState='playing';['play','pause','nexttrack'].forEach(a=>m.setActionHandler(a,act));m.setActionHandler('previoustrack',back);try{m.setActionHandler('stop',act)}catch(e){}}catch(e){}}
 function start(k,d,mm,o,lc){
   let D=k===2?assessPlan(mm):k===1?runPlan(o):(plan(mm,lc)[d]||[]);if(k===0)D=[WU,...D,CD];
   w={D,Q:steps(D,k),q:0,ph:'work',t:0,tt:0,el:0,t0:Date.now(),end:0,dn:0,k:k===1?'run':'fit',as:k===2,res:{},kgs:{},sets:{},tip:0,ask:0};setT(T0());
-  try{if(!ctx)ctx=new(window.AudioContext||window.webkitAudioContext)();ctx.resume&&ctx.resume()}catch(e){}
+  audioMode();try{if(!ctx)ctx=new(window.AudioContext||window.webkitAudioContext)();ctx.resume&&ctx.resume()}catch(e){}
   if(!mfree()){try{au=new Audio(silence());au.loop=true;au.play().catch(()=>{})}catch(e){}}else au=null;
   wlock();
-  clearInterval(tm);tm=setInterval(tick,250);S.v='work';ms();R();say(sayCur());
+  clearInterval(tm);tm=setInterval(tick,250);S.v='work';ms();R();speak(sayCur());
 }
 function setT(n){w.t=w.tt=n;w.end=Date.now()+n*1000}
 function wlock(){try{if(navigator.wakeLock&&document.visibilityState==='visible'&&(!wl||wl.released))navigator.wakeLock.request('screen').then(l=>wl=l).catch(()=>{})}catch(e){}}
 function tick(){if(!w||w.ph==='done')return;const now=Date.now(),el=Math.floor((now-w.t0)/1000),pt=w.t;
-  if(w.ph==='rest'||T0()){w.t=Math.ceil((w.end-now)/1000);if(w.t!==pt&&w.t>0&&w.t<=3&&now-w.end>-3500)beep(500,.08);if(w.t===10&&pt!==10&&w.ph==='rest')say('עוד 10 שניות');if(w.t<=0){w.el=el;beep(900,.3);w.ph==='work'?fin():adv();return}}
+  if(w.ph==='rest'||T0()){w.t=Math.ceil((w.end-now)/1000);if(w.t!==pt&&w.t>0&&w.t<=3&&now-w.end>-3500)beep(500,.08);if(w.t===10&&pt!==10&&w.ph==='rest')speak('עוד 10 שניות');if(w.t<=0){w.el=el;beep(900,.3);w.ph==='work'?fin():adv();return}}
   if(el===w.el&&w.t===pt)return;w.el=el;upd()}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible'||!w||w.ph==='done')return;wlock();try{ctx&&ctx.resume&&ctx.resume()}catch(e){}try{au&&au.paused&&au.play().catch(()=>{})}catch(e){}tick()});
 function upd(){const a=$('tt'),b=$('el'),g=$('rg');if(a)a.textContent=fmt(w.t);if(b)b.textContent=fmt(w.el);if(g)g.setAttribute('stroke-dashoffset',552.9*(1-(w.tt?Math.max(0,w.t/w.tt):0)))}
@@ -652,15 +658,15 @@ function act(){if(!w||w.ph==='done')return;try{ctx&&ctx.resume&&ctx.resume()}cat
 function fin(){const s=st(),c=cur(),last=w.q===w.Q.length-1;if(!s.wu&&c.gr!=='warm')w.dn++;
   const r=last?((tracked(c)||c.test)&&!s.wu?45:0):s.rest;
   if(!r)return last?end(true):adv();
-  w.ph='rest';setT(r);beep(660,.15);R();ms();say('מנוחה '+(r>=60&&r%60===0?(r/60===1?'דקה':r/60+' דקות'):r+' שניות'))}
-function adv(){if(w.q>=w.Q.length-1)return end(true);w.q++;w.ph='work';setT(T0());beep(900,.15);R();ms();say(sayCur())}
+  w.ph='rest';setT(r);beep(660,.15);R();ms();speak('מנוחה '+(r>=60&&r%60===0?(r/60===1?'דקה':r/60+' דקות'):r+' שניות'))}
+function adv(){if(w.q>=w.Q.length-1)return end(true);w.q++;w.ph='work';setT(T0());beep(900,.15);R();ms();speak(sayCur())}
 function back(){if(!w||w.ph==='done'||!w.q)return;w.q--;w.ph='work';setT(T0());R();ms()}
 function addR(n){if(!w||w.ph==='done')return;w.end+=n*1000;w.t+=n;w.tt=Math.max(w.tt,w.t);upd()}
 function wset(v){w.kgs[cur().name]=+v}
 function wstep(d){const c=cur(),v=+(w.kgs[c.name]??sugW(c))||0,n=d>0?(v?upW(v,c.ek):stp(c.ek)):(v?dnW(v,c.ek):0);w.kgs[c.name]=n;const e=$('wv');if(e)e.value=n}
 function wrep(v){const c=cur(),s=st();if(s.wu)return;const a=w.sets[c.name]=w.sets[c.name]||[];a[s.s-1]={kg:c.w?(+(w.kgs[c.name]??sugW(c))||0):0,reps:+v}}
 function end(ok){clearInterval(tm);if(w)w.el=Math.floor((Date.now()-w.t0)/1000);try{speechSynthesis.cancel()}catch(e){}
-  if(ok){w.ask=0;S.log.push({d:Date.now(),min:Math.max(1,Math.round(w.el/60)),n:w.D.length,k:w.k,dk:dk(new Date())});if(w.as)applyAssess(w.res);applyLoads();save();w.ph='done';beep(900,.5);say('כל הכבוד, האימון הושלם')}else{w=null;S.v='home'}
+  if(ok){w.ask=0;S.log.push({d:Date.now(),min:Math.max(1,Math.round(w.el/60)),n:w.D.length,k:w.k,dk:dk(new Date())});if(w.as)applyAssess(w.res);applyLoads();save();w.ph='done';beep(900,.5);speak('כל הכבוד, האימון הושלם')}else{w=null;S.v='home'}
   try{au&&au.pause()}catch(e){}try{wl&&wl.release()}catch(e){}
   try{if('mediaSession'in navigator)navigator.mediaSession.playbackState='none'}catch(e){}
   R()}
