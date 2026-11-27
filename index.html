@@ -652,7 +652,7 @@ function assess(){const P=S.P,ch=(k,L)=>`<div class="chips">${L.map((l,i)=>`<but
 function startAs(){pf();const k=S.P.kg;if(k>20&&k<300&&(!S.wt.length||S.wt[S.wt.length-1].kg!==k))S.wt.push({d:Date.now(),kg:k});if(S.P.rc!=null)S.P.rlvl=S.P.rc<3?'b':S.P.rc<6?'m':'a';save();start(2,0,S.P.min||45)}
 function loadTest(){const o=[['סקוואט גביע','dumbbell'],['סקוואט עם מוט','barbell'],['סקוואט גביע בקטלבל','kettle']].find(a=>S.eq.includes(a[1]));return o?[{name:'מבחן עומס: '+o[0],ln:o[0],ek:o[1],set:1,reps:'8–12',t:false,rest:120,gr:'test',w:1,lo:8,hi:12,tips:['משקל שמאפשר 8–12 חזרות ועוד 1–2 במאגר','זו הערכה מסט בינוני, לא בדיקת מקסימום']}]:[]}
 function assessPlan(mm){const T=(name,key,dur,tips)=>({name:'מבחן: '+name,set:1,reps:dur?dur+' שנ׳':'מקס׳',t:!!dur,dur,rest:90,gr:'test',test:1,key,tips});return[{name:'חימום',set:1,reps:'5 דק׳',t:true,dur:300,rest:0,gr:'warm',tips:WU.tips},T('שכיבות סמיכה','pu',0,['שכיבות מלאות ברצף עד שהטכניקה נשברת','גב ישר, מרפקים בזווית נוחה']),T('סקוואט משקל גוף','sq',60,['כמה שיותר חזרות ב־60 שניות, בטכניקה נקייה']),T('גשר ישבן','br',60,['כמה שיותר חזרות ב־60 שניות','דחוף דרך העקבים וכווץ ישבן למעלה']),T('פלאנק (לא חובה)','pl',120,['לוחצים "סיימתי" כשהטכניקה נשברת']),...loadTest(),...(plan(mm)[0]||[]),{name:'שחרור ומתיחות',set:1,reps:'5 דק׳',t:true,dur:300,rest:0,gr:'warm',tips:CD.tips}]}
-function applyAssess(r){const g=k=>+r[k]||0,f=(v,t)=>v<t[0]?0:v<t[1]?1:2,sc=f(g('pu'),[8,20])+f(g('sq'),[25,45])+f(g('br'),[30,50])+[0,0,1,2][S.P.exp||0]+(S.P.act===2?1:0);S.P.lvl=sc<=2?'b':sc<=5?'m':'a';S.P.assess={d:Date.now(),pu:g('pu'),sq:g('sq'),br:g('br'),pl:g('pl'),sc}}
+function applyAssess(r){const has=k=>r[k]!=null&&String(r[k]).trim()!=='';if(!['pu','sq','br'].every(has)){w.asNo=1;return}const g=k=>+r[k]||0,f=(v,t)=>v<t[0]?0:v<t[1]?1:2,sc=f(g('pu'),[8,20])+f(g('sq'),[25,45])+f(g('br'),[30,50])+[0,0,1,2][S.P.exp||0]+(S.P.act===2?1:0);S.P.lvl=sc<=2?'b':sc<=5?'m':'a';S.P.assess={d:Date.now(),pu:g('pu'),sq:g('sq'),br:g('br'),pl:g('pl'),sc}}
 
 /* ---------- workout engine ---------- */
 let w=null,tm=null,au=null,ctx=null,wl=null;
@@ -682,9 +682,11 @@ function start(k,d,mm,o,lc){
   wlock();
   clearInterval(tm);tm=setInterval(tick,250);S.v='work';ms();R();
 }
+// בזמן השאלה "לסיים את האימון?" השעון עוצר, כדי שסט או מנוחה לא יסתיימו מאחורי החלון
+function askEnd(on){if(!w)return;if(on){w.ask=1;w.pa=Date.now()}else{const d=Date.now()-(w.pa||Date.now());w.end+=d;w.t0+=d;w.ask=0;w.pa=0}R()}
 function setT(n){w.t=w.tt=n;w.end=Date.now()+n*1000}
 function wlock(){try{if(navigator.wakeLock&&document.visibilityState==='visible'&&(!wl||wl.released))navigator.wakeLock.request('screen').then(l=>wl=l).catch(()=>{})}catch(e){}}
-function tick(){if(!w||w.ph==='done')return;const now=Date.now(),el=Math.floor((now-w.t0)/1000),pt=w.t;
+function tick(){if(!w||w.ph==='done'||w.ask)return;const now=Date.now(),el=Math.floor((now-w.t0)/1000),pt=w.t;
   if(w.ph==='rest'||T0()){w.t=Math.ceil((w.end-now)/1000);if(w.t!==pt&&w.t>0&&w.t<=3&&now-w.end>-3500)beep(500,.08);if(w.t<=0){w.el=el;beep(900,.3);w.ph==='work'?fin():adv();return}}
   if(el===w.el&&w.t===pt)return;w.el=el;upd()}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible'||!w||w.ph==='done')return;wlock();try{ctx&&ctx.resume&&ctx.resume()}catch(e){}try{au&&au.paused&&au.play().catch(()=>{})}catch(e){}tick()});
@@ -719,8 +721,8 @@ function ring(t,T,lab){const f=T>0?Math.max(0,t/T):0;return `<div class="ring"><
 function work(){
   if(w.ph==='done')return doneUI();
   const c=cur(),s=st(),rest=w.ph==='rest',ex=w.D.filter(x=>x.gr!=='warm'),xi=ex.indexOf(c);
-  const bar=`<div class="wbar"><button class="ic" onclick="w.ask=1;R()" aria-label="סיום אימון">${IC.x}</button><div class="pg">${w.Q.map((_,i)=>`<i class="${i<w.q||(i===w.q&&rest)?'ok':i===w.q?'now':''}"></i>`).join('')}</div><span class="el" id="el">${fmt(w.el)}</span></div>`;
-  if(w.ask)return `<div class="wo">${bar}<section class="card"><h2>לסיים את האימון?</h2><p class="note">אפשר לשמור את מה שעשית עד עכשיו.</p><button class="btn" onclick="end(true)">שמור וסיים</button><button class="btn2" onclick="end(false)">צא בלי לשמור</button><button class="ghost" style="align-self:center" onclick="w.ask=0;R()">המשך להתאמן</button></section></div>`;
+  const bar=`<div class="wbar"><button class="ic" onclick="askEnd(1)" aria-label="סיום אימון">${IC.x}</button><div class="pg">${w.Q.map((_,i)=>`<i class="${i<w.q||(i===w.q&&rest)?'ok':i===w.q?'now':''}"></i>`).join('')}</div><span class="el" id="el">${fmt(w.el)}</span></div>`;
+  if(w.ask)return `<div class="wo">${bar}<section class="card"><h2>לסיים את האימון?</h2><p class="note">אפשר לשמור את מה שעשית עד עכשיו.</p><button class="btn" onclick="end(true)">שמור וסיים</button><button class="btn2" onclick="end(false)">צא בלי לשמור</button><button class="ghost" style="align-self:center" onclick="askEnd(0)">המשך להתאמן</button></section></div>`;
   const eye=c.gr==='warm'?'חימום ושחרור':c.test?'מבחן':c.gr==='run'?'ריצה':`תרגיל ${xi+1} מתוך ${ex.length}${c.ss?' · סופרסט '+c.ss:''}`;
   if(rest){const nq=w.Q[w.q+1],nc=nq?w.D[nq.i]:null,rv=((w.sets[c.name]||[])[s.s-1]||{}).reps,lo=c.lo!=null?Math.max(1,c.lo-3):0,hi=c.hi!=null?c.hi+3:0;
     return `<div class="wo rest" onclick="tapAny(event)">${bar}<div class="wh"><div class="eye">${c.gr==='run'?'הליכה':'מנוחה'}</div></div>${ring(w.t,w.tt,c.gr==='run'?'הליכה':'מנוחה')}
@@ -746,7 +748,7 @@ function doneUI(){const run=w.k==='run',mins=Math.max(1,Math.round(w.el/60)),vol
   return `<div class="wh" style="padding-top:28px"><div class="okc">${IC.ck}</div><h1>${w.as?'בדיקת הרמה הושלמה':'כל הכבוד'}</h1><p class="note">${run?'ריצה':'אימון'} של ${mins} דקות נשמר</p></div>
   <div class="stats"><div class="stat"><span>דקות</span><b>${mins}</b></div><div class="stat"><span>${run?'קטעים':'סטים'}</span><b>${w.dn}</b></div><div class="stat"><span>${run?'תרגילים':'נפח (ק״ג)'}</span><b>${run?w.D.length:vol.toLocaleString('he-IL')}</b></div></div>
   ${w.prs&&w.prs.length?`<section class="card"><div class="eye">שיא אישי חדש</div><div class="meta">${w.prs.map(p=>`<span class="tag ac">${IC.bolt} ${esc(p)}</span>`).join('')}</div></section>`:''}
-  ${w.as?`<section class="card"><div class="eye">הרמה שלך</div><h2>${LN[S.P.lvl]}</h2><p class="note">התכנית והמשקלים מכוילים עכשיו לתוצאות.</p></section>`:''}
+  ${w.as?`<section class="card"><div class="eye">הרמה שלך</div><h2>${LN[S.P.lvl]}</h2><p class="note">${w.asNo?'לא הוזנו תוצאות לכל המבחנים, אז הרמה לא שונתה. אפשר לחזור על הבדיקה מההגדרות.':'התכנית והמשקלים מכוילים עכשיו לתוצאות.'}</p></section>`:''}
   ${w.lm&&w.lm.length?`<section class="card list"><div class="eye" style="padding-bottom:10px">בפעם הבאה</div>${w.lm.map(m=>`<div class="set"><div class="row"><b>${esc(m[0])}</b><span class="n ${m[2]>0?'up':m[2]<0?'dn':''}">${m[2]>0?'↑ ':m[2]<0?'↓ ':''}${m[1]}</span></div></div>`).join('')}</section>`:''}
   ${fbUI()}<button class="btn" onclick="w=null;S.v='home';R()">חזרה לתכנית</button>`}
 function fbUI(){if(w.fbDone)return `<section class="card"><div class="eye">המשוב התקבל</div><p>${esc((w.fbm||[]).join(' · ')||'אין שינוי. ממשיכים ככה.')}</p></section>`;
