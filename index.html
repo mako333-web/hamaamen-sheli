@@ -1,5 +1,12 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>המאמן שלי</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#071a1b">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="המאמן שלי">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <script>document.documentElement.lang='he';document.documentElement.dir='rtl'</script>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23D4F24A'/%3E%3Cpath d='M33 50V38L50 24L67 38V50' fill='none' stroke='%230B3B3C' stroke-width='8' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='50' cy='63' r='22' fill='%230B3B3C'/%3E%3Crect x='44.5' y='60' width='11' height='17' rx='5.5' fill='%23D4F24A'/%3E%3C/svg%3E">
@@ -1157,6 +1164,8 @@ let lk=null;
 const nr=h=>h.replace(/(\d+(?:\.\d+)?)–(\d+(?:\.\d+)?)/g,'\u2066$1–$2\u2069');
 function R(){const fa=document.activeElement,fk=S.fx||(fa&&fa.dataset&&fa.dataset.f);S.fx=null;const y=window.scrollY,k=S.v+(S.v==='wiz'?':'+S.q:'')+(S.v==='work'&&w?':'+w.q+w.ph:'');$('app').innerHTML=nr(({wiz,home,equip,set:settings,work,assess,auth})[S.v]());nav();try{f3mount()}catch(e){};window.scrollTo(0,k===lk?y:0);if(fk&&k===lk){const fe=document.querySelector(`[data-f="${fk}"]`);if(fe)fe.focus({preventScroll:true})}lk=k}
 R();resume();
+/* PWA: התקנה למסך הבית ועבודה בלי אינטרנט. בודקים עדכון בכל פעם שחוזרים לאפליקציה */
+if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').then(r=>{document.addEventListener('visibilitychange',()=>{if(!document.hidden)r.update().catch(()=>{})})}).catch(()=>{})})}
 </script>
 
 
