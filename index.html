@@ -282,7 +282,8 @@ try{ldS(JSON.parse(localStorage.getItem('fit1')||'{}'))}catch(e){}
 S.au={m:'in',u:'',st:1,err:'',busy:0};
 const A0=(()=>{try{return JSON.parse(localStorage.getItem('fit1auth')||sessionStorage.getItem('fit1auth')||'null')}catch(e){return null}})();
 let AU={u:A0&&A0.u||null,id:A0&&A0.id||null,tok:A0&&A0.t||null,db:null};
-S.v=(AU.u||(A0&&A0.g))?(S.setup?'home':'wiz'):'auth';
+const CLD=()=>!!(window.claude&&claude.use);
+S.v=(AU.u||(A0&&A0.g)||!CLD())?(S.setup?'home':'wiz'):'auth';
 const blob=()=>({P:S.P,eq:S.eq,log:S.log,setup:S.setup,cal:S.cal,cg:S.cg,dm:S.dm,wt:S.wt,cx:S.cx,fv:S.fv,ld:S.ld,aw:S.aw,fb:S.fb,bp:S.bp,lv:S.lv,lc:S.lc,awt:S.awt,u:S.u});
 const save=()=>{S.u=Date.now();try{localStorage.setItem('fit1',JSON.stringify(blob()))}catch(e){}push()};
 const $=id=>document.getElementById(id);
@@ -467,7 +468,7 @@ const SCE={not_granted:'צריך לאשר לאפליקציה להשתמש ב-Cla
 async function scan(f){
   if(!f)return;const say=t=>{S.msg=t;const e=$('st');if(e){e.hidden=false;e.textContent=t}};say('מזהה ציוד… זה יכול לקחת עד חצי דקה');
   let sm=null;try{sm=window.claude&&claude.use?await claude.use('sample'):null}catch(e){}
-  if(!sm)return say('זיהוי מתמונה זמין רק כשהאפליקציה פתוחה בתוך Claude. אפשר לסמן ידנית.');
+  if(!sm)return say('זיהוי מתמונה עדיין לא זמין בגרסת האתר. בינתיים סמן את הציוד שלך בלחיצה על הריבועים למטה.');
   try{const l=await sm.limits();if(l&&!l.images)return say('שליחת תמונות לא זמינה בתצוגה הזו. נסה לפתוח באתר claude.ai או באפליקציית Claude, או סמן ידנית.')}catch(e){}
   let b;try{b=await shrink(f)}catch(e){b=f}
   try{
@@ -519,7 +520,10 @@ function setP(k,v){S.P[k]=v;save();R()}
 function setLv(i,d){const c=LAD[i],s=Math.max(0,Math.min(c.s.length-1,lstep(i)+d));S.lv[c.n]=s;S.bp[c.s[s]]=0;save();R()}
 function sw(){const v=+$('wk2').value;if(v>20&&v<300){S.wt.push({d:Date.now(),kg:v});S.P.kg=v;save();R()}}
 function setLd(i,k){const v=+$('ld'+i).value;if(v>0){S.ld[k].kg=v;save();R()}}
-function acctUI(){return `<section class="card"><div class="row"><span class="ic" style="font-weight:800">${AU.u?esc(AU.u[0].toUpperCase()):IC.set}</span><div class="grow"><b>${AU.u?esc(AU.u):'אורח'}</b><div class="note">${AU.u?'מסונכרן בין מכשירים':'נשמר רק במכשיר הזה'}</div></div><button class="btn2" onclick="${AU.u?'logout()':'logout(1)'}">${AU.u?'התנתק':'התחבר'}</button></div></section>`}
+function acctUI(){return `<section class="card"><div class="row"><span class="ic" style="font-weight:800">${AU.u?esc(AU.u[0].toUpperCase()):IC.set}</span><div class="grow"><b>${AU.u?esc(AU.u):'אורח'}</b><div class="note">${AU.u?'מסונכרן בין מכשירים':'נשמר רק במכשיר הזה'}</div></div>${AU.u||CLD()?`<button class="btn2" onclick="${AU.u?'logout()':'logout(1)'}">${AU.u?'התנתק':'התחבר'}</button>`:''}</div>
+<p class="note">${AU.u?'':'כדי לא לאבד נתונים או להעביר אותם לטלפון אחר: שמור גיבוי, ובמכשיר החדש בחר ״שחזר מגיבוי״.'}</p><div class="row"><button class="btn2 grow" onclick="bkOut()">שמור גיבוי</button><label class="btn2 grow" tabindex="0" style="text-align:center" onkeydown="if(event.key==='Enter')this.click()">שחזר מגיבוי<input type="file" accept=".json,application/json" onchange="bkIn(this.files[0]);this.value=''"></label></div><p id="bkm" class="note" hidden></p></section>`}
+function bkOut(){try{const b=new Blob([JSON.stringify({app:'hamaamen',v:1,at:Date.now(),s:blob()})],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='hamaamen-backup-'+dk(new Date())+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}catch(e){const m=$('bkm');if(m){m.hidden=false;m.textContent='שמירת הגיבוי נכשלה בדפדפן הזה.'}}}
+function bkIn(f){if(!f)return;const r=new FileReader(),m=t=>{const e=$('bkm');if(e){e.hidden=false;e.textContent=t}};r.onload=()=>{try{const o=JSON.parse(r.result),d=o&&o.app==='hamaamen'?o.s:null;if(!d||typeof d!=='object'||!d.P)return m('הקובץ הזה לא גיבוי של המאמן שלי.');ldS(d);save();S.v=S.setup?'set':'wiz';R();const e=$('bkm');if(e){e.hidden=false;e.textContent='הגיבוי שוחזר.'}}catch(e){m('לא הצלחתי לקרוא את הקובץ.')}};r.onerror=()=>m('לא הצלחתי לקרוא את הקובץ.');r.readAsText(f)}
 function settings(){const P=S.P,chs=(k,o)=>`<div class="chips">${o.map(x=>`<button class="chip ${P[k]===x[0]?'on':''}" onclick="setP(${J(k)},${J(x[0])})">${esc(x[1])}</button>`).join('')}</div>`,seg=(k,o)=>`<div class="seg">${o.map(x=>`<button class="${P[k]===x[0]?'on':''}" onclick="setP(${J(k)},${J(x[0])})">${x[1]}</button>`).join('')}</div>`,days=k=>`<div class="wk">${DN.map((m,j)=>`<button class="d ${S.cal[K[k]].includes(j)?'p'+k:''}" aria-pressed="${S.cal[K[k]].includes(j)}" onclick="tgd(${k},${j})"><b>${m}</b></button>`).join('')}</div>`,mn=P.min||45,pc=P.pace||PD[RL()]||450,l=S.wt[S.wt.length-1],f=S.wt[0],ks=Object.keys(S.ld);
   return `${hd('הגדרות')}${acctUI()}
   <div class="grp"><h3>התכנית</h3><section class="card list">
@@ -533,6 +537,7 @@ function settings(){const P=S.P,chs=(k,o)=>`<div class="chips">${o.map(x=>`<butt
   <div class="grp"><h3>שליטה בזמן אימון (גם עם מוזיקה)</h3><section class="card list">
    <div class="set"><div class="row"><b>ידיים חופשיות<div class="note">כל סט נגמר לבד, עם צפצוף ספירה לאחור</div></b><div class="seg" style="width:120px"><button class="${P.hf?'':'on'}" onclick="setP('hf',0)">כבוי</button><button class="${P.hf?'on':''}" onclick="setP('hf',1)">פעיל</button></div></div>${P.hf?`<div class="fld"><span>שניות לחזרה</span><div class="chips">${[2.5,3,3.5,4,5].map(v=>`<button class="chip ${(P.rs||3.5)===v?'on':''}" onclick="setP('rs',${v})">${v}</button>`).join('')}</div></div>`:''}</div>
    <div class="set"><div class="row"><b>נגיעה בכל המסך<div class="note">נגיעה בכל מקום מסיימת סט או מדלגת על מנוחה</div></b><div class="seg" style="width:120px"><button class="${P.tap?'':'on'}" onclick="setP('tap',0)">כבוי</button><button class="${P.tap?'on':''}" onclick="setP('tap',1)">פעיל</button></div></div></div>
+   <div class="set"><div class="row"><b>הכרזה קולית<div class="note">המאמן מקריא באוזניות את התרגיל, הסט והמנוחה</div></b><div class="seg" style="width:120px"><button class="${P.vc?'':'on'}" onclick="setP('vc',0)">כבוי</button><button class="${P.vc?'on':''}" onclick="setP('vc',1);say('הכרזה קולית פעילה')">פעיל</button></div></div></div>
   </section></div>
   <div class="grp"><h3>לוח שבועי</h3><section class="card list"><div class="set"><b>ימי כוח</b>${days(0)}</div><div class="set"><b>ימי ריצה</b>${days(1)}</div></section></div>
   <div class="grp"><h3>ריצה וגוף</h3><section class="card list">
@@ -580,33 +585,38 @@ function silence(){const n=8000,b=new Uint8Array(44+n),dv=new DataView(b.buffer)
   t(0,'RIFF');dv.setUint32(4,36+n,true);t(8,'WAVEfmt ');dv.setUint32(16,16,true);dv.setUint16(20,1,true);dv.setUint16(22,1,true);dv.setUint32(24,8000,true);dv.setUint32(28,8000,true);dv.setUint16(32,1,true);dv.setUint16(34,8,true);t(36,'data');dv.setUint32(40,n,true);b.fill(128,44);
   let s='';b.forEach(x=>s+=String.fromCharCode(x));return 'data:audio/wav;base64,'+btoa(s)}
 function beep(f,d){try{const o=ctx.createOscillator(),g=ctx.createGain();o.frequency.value=f;g.gain.value=.25;o.connect(g);g.connect(ctx.destination);o.start();o.stop(ctx.currentTime+d)}catch(e){}try{navigator.vibrate&&navigator.vibrate(80)}catch(e){}}
+function say(t){if(!S.P.vc||!t)return;try{const u=new SpeechSynthesisUtterance(t);u.lang='he-IL';const v=speechSynthesis.getVoices().find(v=>/^he|^iw/i.test(v.lang));if(v)u.voice=v;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
+function sayCur(){if(!w||w.ph==='done')return'';const c=cur(),s=st();return c.name+(s.wu?', סט חימום':c.set>1?', סט '+s.s+' מתוך '+c.set:'')+(c.reps&&!c.t?', '+String(c.reps).replace('–',' עד ')+' חזרות':'')}
 function ms(){if(!('mediaSession' in navigator)||!w||w.ph==='done'||mfree())return;
-  try{const m=navigator.mediaSession;m.metadata=new MediaMetadata({title:cur().name,artist:st().wu?'סט חימום':'סט '+st().s+' מתוך '+cur().set,album:'המאמן שלי'});m.playbackState='playing';['play','pause','nexttrack'].forEach(a=>m.setActionHandler(a,act));m.setActionHandler('previoustrack',back)}catch(e){}}
+  try{const m=navigator.mediaSession;m.metadata=new MediaMetadata({title:cur().name,artist:st().wu?'סט חימום':'סט '+st().s+' מתוך '+cur().set,album:'המאמן שלי'});m.playbackState='playing';['play','pause','nexttrack'].forEach(a=>m.setActionHandler(a,act));m.setActionHandler('previoustrack',back);try{m.setActionHandler('stop',act)}catch(e){}}catch(e){}}
 function start(k,d,mm,o,lc){
   let D=k===2?assessPlan(mm):k===1?runPlan(o):(plan(mm,lc)[d]||[]);if(k===0)D=[WU,...D,CD];
-  w={D,Q:steps(D,k),q:0,ph:'work',t:0,tt:0,el:0,dn:0,k:k===1?'run':'fit',as:k===2,res:{},kgs:{},sets:{},tip:0,ask:0};w.t=w.tt=T0();
-  try{ctx=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}
+  w={D,Q:steps(D,k),q:0,ph:'work',t:0,tt:0,el:0,t0:Date.now(),end:0,dn:0,k:k===1?'run':'fit',as:k===2,res:{},kgs:{},sets:{},tip:0,ask:0};setT(T0());
+  try{if(!ctx)ctx=new(window.AudioContext||window.webkitAudioContext)();ctx.resume&&ctx.resume()}catch(e){}
   if(!mfree()){try{au=new Audio(silence());au.loop=true;au.play().catch(()=>{})}catch(e){}}else au=null;
-  try{navigator.wakeLock&&navigator.wakeLock.request('screen').then(l=>wl=l).catch(()=>{})}catch(e){}
-  clearInterval(tm);tm=setInterval(tick,1000);S.v='work';ms();R();
+  wlock();
+  clearInterval(tm);tm=setInterval(tick,250);S.v='work';ms();R();say(sayCur());
 }
-function tick(){if(!w||w.ph==='done')return;w.el++;
-  if(w.ph==='rest'||T0()){w.t--;if(w.t>0&&w.t<=3)beep(500,.08);if(w.t<=0){beep(900,.3);w.ph==='work'?fin():adv();return}}
-  upd()}
+function setT(n){w.t=w.tt=n;w.end=Date.now()+n*1000}
+function wlock(){try{if(navigator.wakeLock&&document.visibilityState==='visible'&&(!wl||wl.released))navigator.wakeLock.request('screen').then(l=>wl=l).catch(()=>{})}catch(e){}}
+function tick(){if(!w||w.ph==='done')return;const now=Date.now(),el=Math.floor((now-w.t0)/1000),pt=w.t;
+  if(w.ph==='rest'||T0()){w.t=Math.ceil((w.end-now)/1000);if(w.t!==pt&&w.t>0&&w.t<=3&&now-w.end>-3500)beep(500,.08);if(w.t===10&&pt!==10&&w.ph==='rest')say('עוד 10 שניות');if(w.t<=0){w.el=el;beep(900,.3);w.ph==='work'?fin():adv();return}}
+  if(el===w.el&&w.t===pt)return;w.el=el;upd()}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible'||!w||w.ph==='done')return;wlock();try{ctx&&ctx.resume&&ctx.resume()}catch(e){}try{au&&au.paused&&au.play().catch(()=>{})}catch(e){}tick()});
 function upd(){const a=$('tt'),b=$('el'),g=$('rg');if(a)a.textContent=fmt(w.t);if(b)b.textContent=fmt(w.el);if(g)g.setAttribute('stroke-dashoffset',552.9*(1-(w.tt?Math.max(0,w.t/w.tt):0)))}
-function act(){if(!w||w.ph==='done')return;w.ph==='work'?fin():adv();try{au&&au.paused&&au.play()}catch(e){}}
+function act(){if(!w||w.ph==='done')return;try{ctx&&ctx.resume&&ctx.resume()}catch(e){}w.ph==='work'?fin():adv();try{au&&au.paused&&au.play().catch(()=>{})}catch(e){}}
 function fin(){const s=st(),c=cur(),last=w.q===w.Q.length-1;if(!s.wu&&c.gr!=='warm')w.dn++;
   const r=last?((tracked(c)||c.test)&&!s.wu?45:0):s.rest;
   if(!r)return last?end(true):adv();
-  w.ph='rest';w.t=w.tt=r;beep(660,.15);R();ms()}
-function adv(){if(w.q>=w.Q.length-1)return end(true);w.q++;w.ph='work';w.t=w.tt=T0();beep(900,.15);R();ms()}
-function back(){if(!w||w.ph==='done'||!w.q)return;w.q--;w.ph='work';w.t=w.tt=T0();R();ms()}
-function addR(n){if(!w||w.ph==='done')return;w.t+=n;w.tt=Math.max(w.tt,w.t);upd()}
+  w.ph='rest';setT(r);beep(660,.15);R();ms();say('מנוחה '+(r>=60&&r%60===0?(r/60===1?'דקה':r/60+' דקות'):r+' שניות'))}
+function adv(){if(w.q>=w.Q.length-1)return end(true);w.q++;w.ph='work';setT(T0());beep(900,.15);R();ms();say(sayCur())}
+function back(){if(!w||w.ph==='done'||!w.q)return;w.q--;w.ph='work';setT(T0());R();ms()}
+function addR(n){if(!w||w.ph==='done')return;w.end+=n*1000;w.t+=n;w.tt=Math.max(w.tt,w.t);upd()}
 function wset(v){w.kgs[cur().name]=+v}
 function wstep(d){const c=cur(),v=+(w.kgs[c.name]??sugW(c))||0,n=d>0?(v?upW(v,c.ek):stp(c.ek)):(v?dnW(v,c.ek):0);w.kgs[c.name]=n;const e=$('wv');if(e)e.value=n}
 function wrep(v){const c=cur(),s=st();if(s.wu)return;const a=w.sets[c.name]=w.sets[c.name]||[];a[s.s-1]={kg:c.w?(+(w.kgs[c.name]??sugW(c))||0):0,reps:+v}}
-function end(ok){clearInterval(tm);
-  if(ok){w.ask=0;S.log.push({d:Date.now(),min:Math.max(1,Math.round(w.el/60)),n:w.D.length,k:w.k,dk:dk(new Date())});if(w.as)applyAssess(w.res);applyLoads();save();w.ph='done';beep(900,.5)}else{w=null;S.v='home'}
+function end(ok){clearInterval(tm);if(w)w.el=Math.floor((Date.now()-w.t0)/1000);try{speechSynthesis.cancel()}catch(e){}
+  if(ok){w.ask=0;S.log.push({d:Date.now(),min:Math.max(1,Math.round(w.el/60)),n:w.D.length,k:w.k,dk:dk(new Date())});if(w.as)applyAssess(w.res);applyLoads();save();w.ph='done';beep(900,.5);say('כל הכבוד, האימון הושלם')}else{w=null;S.v='home'}
   try{au&&au.pause()}catch(e){}try{wl&&wl.release()}catch(e){}
   try{if('mediaSession'in navigator)navigator.mediaSession.playbackState='none'}catch(e){}
   R()}
@@ -1052,7 +1062,7 @@ async function authGo(){
   A.busy=1;A.err='';R();
   try{
     if(!(window.crypto&&crypto.subtle))return fail('הדפדפן הזה לא תומך בהצפנה הנדרשת');
-    const db=await getDb();if(!db)return fail('חשבונות דורשים חיבור לחשבון Claude. אפשר להמשיך כאורח.');
+    const db=await getDb();if(!db)return fail('חשבונות עדיין לא זמינים בגרסת האתר. אפשר להמשיך כאורח, ולהעביר נתונים בין מכשירים עם גיבוי בהגדרות.');
     const id='u'+(await sha('fit:'+un)).slice(0,30),ref=db.collection('accounts').doc(id),sn=await ref.get(),d=sn.exists?sn.data():null,tok=rnd(24),th=await sha(tok);
     if(up){if(d)return fail('שם המשתמש תפוס');const salt=rnd(16);S.u=Date.now();await ref.set({name:un,salt,hash:await pbk(pw,salt),s:JSON.stringify(blob()),upd:S.u,sess:[th]})}
     else{if(!d||(await pbk(pw,d.salt))!==d.hash)return fail('שם משתמש או סיסמה שגויים');await ref.update({sess:[...(d.sess||[]).slice(-4),th]});if(d.s){try{ldS(JSON.parse(d.s))}catch(x){}}}
