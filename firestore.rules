@@ -1,0 +1,12 @@
+rules_version = '2';
+// כל משתמש יכול לקרוא ולכתוב רק את המסמך של עצמו: users/{המזהה שלו}
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.s is string
+        && request.resource.data.s.size() < 900000;
+    }
+  }
+}
