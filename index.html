@@ -158,6 +158,25 @@ details.in>.body{display:flex;flex-direction:column;gap:12px;padding-top:8px}
 .awr .sb{width:40px;height:48px}
 .awr2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;align-items:center}
 .awr2 b{font-weight:500}
+/* weights table: real <table> so screen readers announce column headers */
+.sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.awtb{width:100%;border-collapse:collapse}
+.awtb caption{text-align:start}
+.awtb thead th{font:500 13px/1.3 var(--fb);color:var(--mut);text-align:start;padding:0 0 6px}
+.awtb td,.awtb tbody th{padding:6px 0;border-top:1px solid var(--ln);vertical-align:middle}
+.awtb tbody th{font:700 16px var(--fn);text-align:start;white-space:nowrap}
+.awtb td+td,.awtb th+td{padding-inline-start:8px}
+.awtb .cq{width:1%}
+.awtb .cx{width:44px}
+.awin{width:100%;min-width:72px;text-align:center;font:700 17px var(--fn);padding:10px 6px;min-height:48px}
+.awtb .stp{height:48px;justify-content:space-between;width:100%}
+.awtb .stp button{width:44px;height:48px;flex:none}
+.awtb .stp span{min-width:36px;flex:1}
+.awtb .sb{width:44px;height:48px}
+.awt .chips .chip{min-height:44px;min-width:52px;justify-content:center;font-family:var(--fn)}
+.awadd{display:flex;gap:8px}
+.awadd input{flex:1;min-width:0}
+.awsum{font-size:14px;color:var(--mut)}
 /* nav */
 nav{position:fixed;left:0;right:0;bottom:0;z-index:5;background:rgba(7,26,27,.94);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-top:1px solid var(--ln);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
 nav>div{max-width:520px;margin:0 auto;display:flex}
@@ -209,6 +228,7 @@ nav button.on{color:var(--ac)}
 </style>
 
 <div id="app"></div>
+<div id="sr" class="sr" aria-live="polite" aria-atomic="true"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script>
@@ -499,20 +519,32 @@ function awStep(v,d){const s=v<10?1:2.5;return Math.max(.5,Math.round((v+d*s)*2)
 function awSync(){const T=awT();S.aw=S.aw||{};['dumbbell','kettle'].forEach(k=>{S.aw[k]=[...new Set(T[k].filter(r=>r[1]>0).map(r=>r[0]))].sort((a,b)=>a-b)});
   let t=new Set([0]);PL.forEach(p=>{const n=T.pl[p]||0,nx=new Set();t.forEach(x=>{for(let i=0;i<=n;i++)nx.add(Math.round((x+2*p*i)*100)/100)});t=nx});S.aw.barbell=S.eq.includes('barbell')&&Object.values(T.pl).some(v=>v>0)?[...t].map(x=>x+T.bar).filter(x=>x<=300).sort((a,b)=>a-b).slice(0,80):[];save();R()}
 function awW(k,i,d){const r=awT()[k][i];r[0]=awStep(r[0],d);awSync()}
-function awQ(k,i,d){const r=awT()[k][i];r[1]=Math.max(0,Math.min(20,r[1]+d));awSync()}
-function awDel(k,i){awT()[k].splice(i,1);awSync()}
+function awQ(k,i,d){const r=awT()[k][i];r[1]=Math.max(0,Math.min(20,r[1]+d));say(`${r[0]} ק״ג: ${r[1]} יחידות`);awSync()}
+function awDel(k,i){const r=awT()[k].splice(i,1)[0];if(r)say(`הוסר ${r[0]} ק״ג`);S.fx='awn_'+k;awSync()}
 function awAdd(k){const L=awT()[k],l=L[L.length-1];L.push([l?awStep(l[0],1):(k==='kettle'?8:4),k==='kettle'?1:2]);awSync()}
-function awBar(d){const T=awT();T.bar=Math.max(5,Math.min(25,T.bar+d*2.5));awSync()}
-function awP(p,d){const T=awT();T.pl[p]=Math.max(0,Math.min(10,(T.pl[p]||0)+d));awSync()}
-const awSt=(lab,val,dn,up,unit)=>`<div class="stp" role="group" aria-label="${lab}"><button onclick="${dn}" aria-label="פחות ${lab}">−</button><span class="n" aria-live="polite">${val}${unit||''}</span><button onclick="${up}" aria-label="יותר ${lab}">+</button></div>`;
+function awBar(d){const T=awT();T.bar=Math.max(5,Math.min(25,T.bar+d*2.5));say(`משקל המוט: ${T.bar} ק״ג`);awSync()}
+function awP(p,d){const T=awT();T.pl[p]=Math.max(0,Math.min(10,(T.pl[p]||0)+d));say(`פלטות ${p} ק״ג: ${T.pl[p]} זוגות`);awSync()}
+const awSt=(lab,val,dn,up,unit,fk)=>`<div class="stp" role="group" aria-label="${lab}"><button onclick="${dn}" aria-label="פחות ${lab}"${fk?` data-f="${fk}-"`:''}>−</button><span class="n">${val}${unit||''}</span><button onclick="${up}" aria-label="יותר ${lab}"${fk?` data-f="${fk}+"`:''}>+</button></div>`;
+const AWQ={dumbbell:[1,2,3,4,5,6,7,8,9,10,12.5,15,17.5,20,22.5,25],kettle:[4,6,8,10,12,14,16,20,24,28,32]},awU=k=>k==='kettle'?'יחידות':'יחידות';
+function say(t){const e=document.getElementById('sr');if(!e)return;e.textContent='';setTimeout(()=>{e.textContent=t},60)}
+function awNorm(k){const T=awT(),m=new Map();T[k].forEach(r=>m.set(r[0],(m.get(r[0])||0)+r[1]));T[k]=[...m].map(([w,q])=>[w,Math.min(20,q)]).sort((a,b)=>a[0]-b[0])}
+function awIx(k,v){return awT()[k].findIndex(r=>r[0]===v)}
+function awQuick(k,v){const T=awT(),i=awIx(k,v);if(i>=0&&T[k][i][1]>0){T[k].splice(i,1);say(`הוסר ${v} ק״ג`)}else{if(i>=0)T[k][i][1]=k==='kettle'?1:2;else T[k].push([v,k==='kettle'?1:2]);awNorm(k);say(`נוסף ${v} ק״ג`)}S.fx=`awq_${k}_${v}`;awSync()}
+function awNum(x){const v=parseFloat(String(x).replace(',','.'));return v>0&&v<=200?Math.round(v*2)/2:0}
+function awSet(k,i,x){const v=awNum(x),T=awT();if(!v){say('משקל לא תקין, אפשר בין 0.5 ל־200 ק״ג');R();return}T[k][i][0]=v;awNorm(k);S.fx=`aww_${k}_${awIx(k,v)}`;say(`עודכן ל־${v} ק״ג`);awSync()}
+function awAddV(k){const e=$('awn_'+k),v=awNum(e&&e.value);S.fx='awn_'+k;if(!v){say('הקלד משקל בין 0.5 ל־200 ק״ג');if(e)e.focus();return}const T=awT(),i=awIx(k,v);if(i>=0&&T[k][i][1]>0){say(`${v} ק״ג כבר בטבלה`);if(e){e.value='';e.focus()}return}if(i>=0)T[k][i][1]=k==='kettle'?1:2;else T[k].push([v,k==='kettle'?1:2]);awNorm(k);say(`נוסף ${v} ק״ג`);awSync()}
 function awUI(){const T=awT(),L=['dumbbell','kettle','barbell'].filter(k=>S.eq.includes(k)),nm=k=>E.find(e=>e[0]===k)[1];
-  return `<p class="note">מוסיפים שורה לכל משקל שיש בבית, ומעדכנים כמה יחידות יש ממנו. המאמן יציע רק משקלים שקיימים אצלך.</p>${L.map(k=>k==='barbell'?`<div class="awt"><h3 class="awk">${nm(k)}</h3>
-   <div class="awr2"><b>משקל המוט</b>${awSt('משקל המוט',T.bar,'awBar(-1)','awBar(1)',' ק״ג')}</div>
-   <div class="awh"><span>פלטה</span><span>זוגות</span></div>${PL.map(p=>`<div class="awr2"><b class="n">${p} ק״ג</b>${awSt('זוגות של '+p+' ק״ג',T.pl[p]||0,`awP(${p},-1)`,`awP(${p},1)`)}</div>`).join('')}
+  return `<p class="note">מסמנים את המשקלים שיש בבית, ובטבלה מעדכנים כמה יחידות יש מכל אחד. המאמן יציע רק משקלים שקיימים אצלך.</p>${L.map(k=>k==='barbell'?`<div class="awt"><h3 class="awk">${nm(k)}</h3>
+   <div class="awr2"><b>משקל המוט</b>${awSt('משקל המוט',T.bar,'awBar(-1)','awBar(1)',' ק״ג','awbar')}</div>
+   <table class="awtb"><caption class="sr">פלטות: כמה זוגות יש מכל משקל</caption><thead><tr><th scope="col">פלטה</th><th scope="col">זוגות</th></tr></thead><tbody>${PL.map(p=>`<tr><th scope="row">${p} ק״ג</th><td>${awSt('זוגות של '+p+' ק״ג',T.pl[p]||0,`awP(${p},-1)`,`awP(${p},1)`,'',`awp_${p}`)}</td></tr>`).join('')}</tbody></table>
    <p class="note">${(S.aw.barbell||[]).length?`אפשר להרכיב ${S.aw.barbell[0]}–${S.aw.barbell[S.aw.barbell.length-1]} ק״ג על המוט`:'סמן כמה זוגות פלטות יש לך'}</p></div>`
-  :`<div class="awt"><h3 class="awk">${nm(k)}</h3>${T[k].length?`<div class="awh"><span>משקל (ק״ג)</span><span>${k==='kettle'?'כמה יש':'כמה יחידות'}</span><span></span></div>`:''}
-   ${T[k].map((r,i)=>`<div class="awr">${awSt('משקל',r[0],`awW('${k}',${i},-1)`,`awW('${k}',${i},1)`)}${awSt('כמות',r[1],`awQ('${k}',${i},-1)`,`awQ('${k}',${i},1)`)}<button class="sb" onclick="awDel('${k}',${i})" aria-label="מחק שורה ${r[0]} ק״ג">${IC.trash}</button></div>`).join('')}
-   <button class="btn2" onclick="awAdd('${k}')">+ הוסף משקל</button></div>`).join('')}`}
+  :(()=>{const R0=T[k],on=v=>R0.some(r=>r[0]===v&&r[1]>0),tot=R0.reduce((a,r)=>a+r[1],0);return `<div class="awt"><h3 class="awk">${nm(k)}</h3>
+   <span class="eye" id="awqh_${k}">הקש על המשקלים שיש לך (ק״ג)</span>
+   <div class="chips" role="group" aria-labelledby="awqh_${k}">${AWQ[k].map(v=>`<button class="chip ${on(v)?'on':''}" aria-pressed="${on(v)}" data-f="awq_${k}_${v}" onclick="awQuick('${k}',${v})">${v}</button>`).join('')}</div>
+   ${R0.length?`<table class="awtb"><caption class="sr">${nm(k)}: המשקלים שלי</caption><thead><tr><th scope="col">משקל (ק״ג)</th><th scope="col" class="cq">כמה ${awU(k)}</th><th scope="col" class="cx"><span class="sr">הסרה</span></th></tr></thead><tbody>
+   ${R0.map((r,i)=>`<tr><td><input class="n awin" type="number" inputmode="decimal" step="0.5" min="0.5" max="200" value="${r[0]}" aria-label="משקל בק״ג, שורה ${i+1}" data-f="aww_${k}_${i}" onchange="awSet('${k}',${i},this.value)"></td><td class="cq">${awSt(`כמות של ${r[0]} ק״ג`,r[1],`awQ('${k}',${i},-1)`,`awQ('${k}',${i},1)`,'',`awc_${k}_${i}`)}</td><td class="cx"><button class="sb" onclick="awDel('${k}',${i})" aria-label="הסר ${r[0]} ק״ג" data-f="awd_${k}_${i}">${IC.trash}</button></td></tr>`).join('')}</tbody></table>
+   <p class="awsum">סה״כ ${tot} ${awU(k)} · ${R0.filter(r=>r[1]>0).length} משקלים שונים</p>`:`<p class="note">עדיין לא סימנת משקלים.</p>`}
+   <div class="awadd"><input id="awn_${k}" class="n" type="number" inputmode="decimal" step="0.5" min="0.5" max="200" placeholder="משקל אחר, בק״ג" aria-label="משקל אחר לטבלה, בק״ג" data-f="awn_${k}" onkeydown="if(event.key==='Enter')awAddV('${k}')"><button class="btn2" data-f="awa_${k}" onclick="awAddV('${k}')">+ הוסף</button></div></div>`})()).join('')}`}
 function saveAw(){awSync()}
 /* ---------- settings ---------- */
 function setP(k,v){S.P[k]=v;save();R()}
@@ -1074,7 +1106,7 @@ function nav(){const o=document.querySelector('nav');if(o)o.remove();
   h.innerHTML=`<div>${[['home','היום',IC.cal],['equip','ציוד',IC.db],['set','הגדרות',IC.set]].map(t=>`<button class="${S.v===t[0]?'on':''}" onclick="go('${t[0]}')" ${S.v===t[0]?'aria-current="page"':''}>${t[2]}<span>${t[1]}</span></button>`).join('')}</div>`;
   document.body.appendChild(h)}
 let lk=null;
-function R(){const y=window.scrollY,k=S.v+(S.v==='wiz'?':'+S.q:'')+(S.v==='work'&&w?':'+w.q+w.ph:'');$('app').innerHTML=({wiz,home,equip,set:settings,work,assess,auth})[S.v]();nav();try{f3mount()}catch(e){};window.scrollTo(0,k===lk?y:0);lk=k}
+function R(){const fa=document.activeElement,fk=S.fx||(fa&&fa.dataset&&fa.dataset.f);S.fx=null;const y=window.scrollY,k=S.v+(S.v==='wiz'?':'+S.q:'')+(S.v==='work'&&w?':'+w.q+w.ph:'');$('app').innerHTML=({wiz,home,equip,set:settings,work,assess,auth})[S.v]();nav();try{f3mount()}catch(e){};window.scrollTo(0,k===lk?y:0);if(fk&&k===lk){const fe=document.querySelector(`[data-f="${fk}"]`);if(fe)fe.focus({preventScroll:true})}lk=k}
 R();resume();
 </script>
 
