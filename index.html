@@ -376,7 +376,7 @@ function plan(mo,lc){
       used.add(x[0]);usedP.add(PT(x[0],x[2]));
       const t=x[2]==='cardio'||TIM.test(x[0]),wt=!t&&/dumbbell|kettle|barbell|machine|cable/.test(x[1]),iso=ISO.has(x[0]),comp=!iso&&['push','pull','legs'].includes(x[2]);
       let lo=null,hi=null;
-      if(!t){const rg=String(iso?g.r2:(!wt&&gk==='strength'?G.muscle.r:g.r)).split('–').map(Number);lo=rg[0];hi=rg[rg.length-1];if(!wt){const b=S.bp[x[0]]||0;lo=Math.max(1,lo+b);hi=Math.max(lo,hi+b)}}
+      if(!t){const rg=String(iso?g.r2:(!wt&&gk==='strength'?G.muscle.r:g.r)).split('–').map(Number);lo=rg[0];hi=rg[rg.length-1];{const b=S.bp[x[0]]||0;if(!wt||b){lo=Math.max(1,lo+b);hi=Math.max(lo,hi+b)}}}
       list.push({w:wt?1:0,ek:(x[1].match(/dumbbell|kettle|barbell|machine|cable/)||[''])[0],lv:CH[x[0]],name:x[0],set:Math.min(5,sets+(pk&&comp?1:0)),reps:t?td+' שנ׳':(lo===hi?String(lo):lo+'–'+hi),lo,hi,t,dur:t?td:0,rest:iso?Math.round(g.rest*.7):g.rest,gr:x[2],tips:tipsFor(x),comp,iso});
     }
     if(gk!=='fat'){const rk=c=>c.gr==='cardio'?3:c.gr==='core'?2:c.iso?1:0;list=list.map((c,j)=>[c,j]).sort((a,b)=>rk(a[0])-rk(b[0])||a[1]-b[1]).map(a=>a[0])}
@@ -660,7 +660,7 @@ function applyLoads(){w.lm=[];w.lr={};w.prs=[];const dl=deload();(w.D||[]).forEa
    if(ok)nb=Math.min(12,b+2);else if(bad)nb=Math.max(-4,b-2);if(nb!==b){S.bp[c.name]=nb;const d=nb-b;w.lm.push([c.name,Math.max(1,c.lo+d)+'–'+Math.max(1,c.hi+d)+' חזרות',d])}return}
   const kg=ss[ss.length-1].kg;if(!kg)return;const key=c.ln||c.name,L=S.ld[key]||{h:[]},est=kg*(1+Math.max(...rr)/30),e1=Math.round(est*10)/10;let nk=kg;
   if(c.ln){nk=snapW(est/(1+(c.lo+2)/30),c.ek);L.e1=e1;const b=baseKg(key);if(b)S.P.ws=Math.max(.6,Math.min(1.8,Math.round(nk/b*100)/100))}
-  else{if(!dl&&rr.length>=c.set&&rr.every(r=>r>=c.hi))nk=upW(kg,c.ek);else if(rr.every(r=>r<c.lo))nk=dnW(kg,c.ek);if(dl&&L.kg)nk=Math.max(nk,L.kg);if(L.best&&e1>L.best)w.prs.push(key);if(!L.best||e1>L.best)L.best=e1}
+  else{const bp=S.bp[c.name]||0,top=rr.length>=c.set&&rr.every(r=>r>=c.hi),low=rr.every(r=>r<c.lo);if(!dl&&top){nk=upW(kg,c.ek);if(nk>kg){if(bp)S.bp[c.name]=0}else if(bp<10){S.bp[c.name]=Math.min(10,bp+2);w.lm.push([c.name,'זה המשקל הכבד שיש לך. יעד חדש: '+(c.lo+2)+'–'+(c.hi+2)+' חזרות',1])}}else if(low){if(bp>0){S.bp[c.name]=Math.max(0,bp-2);w.lm.push([c.name,(c.lo-2)+'–'+(c.hi-2)+' חזרות',-1])}else nk=dnW(kg,c.ek)}if(dl&&L.kg)nk=Math.max(nk,L.kg);if(L.best&&e1>L.best)w.prs.push(key);if(!L.best||e1>L.best)L.best=e1}
   L.kg=nk;L.h=[...(L.h||[]),{d:Date.now(),kg,r:rr}].slice(-6);S.ld[key]=L;w.lr[key]={kg,nk,ek:c.ek,t:c.ln?1:0};w.lm.push([key,nk+' ק״ג',nk-kg])})}
 function ring(t,T,lab){const f=T>0?Math.max(0,t/T):0;return `<div class="ring"><svg viewBox="0 0 200 200" aria-hidden="true"><circle class="rt" cx="100" cy="100" r="88"/><circle id="rg" class="rp" cx="100" cy="100" r="88" stroke-dasharray="552.9" stroke-dashoffset="${552.9*(1-f)}" transform="rotate(-90 100 100)"/></svg><div class="rv"><b id="tt">${fmt(t)}</b><small>${lab}</small></div></div>`}
 function work(){
