@@ -161,6 +161,7 @@ details.in>.body{display:flex;flex-direction:column;gap:12px;padding-top:8px}
 .awt{display:flex;flex-direction:column;gap:8px;padding-bottom:6px}
 .awt+.awt{border-top:1px solid var(--ln);padding-top:14px}
 .awk{font:700 16px var(--fb)}
+.awh{display:flex;align-items:center;gap:10px;width:100%;text-align:start;min-height:48px}.awh .grow{display:flex;flex-direction:column}.awh .note{margin:0}.awb{display:flex;flex-direction:column;gap:8px}
 .awh{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 40px;gap:8px;font-size:14px;color:var(--mut)}
 .awr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 40px;gap:8px;align-items:center}
 .awr .stp,.awr2 .stp{width:100%;justify-content:space-between;height:48px}
@@ -583,15 +584,26 @@ function addEx(k,l){const e=$('ne_'+k),n=cl(e&&e.value);if(!n)return;const gc={}
 function delEx(n,k){S.cx=S.cx.filter(c=>!(c.n===n&&(c.k||'cx:'+c.e)===k));S.fv.ex=S.fv.ex.filter(x=>x!==n);save();R()}
 function exRows(k,l){return exOf(k).map(x=>{const f=S.fv.ex.includes(x[0]);return `<div class="er x"><button class="sb ${f?'on':''}" onclick="tgs('ex',${J(x[0])})" aria-label="מועדף">${f?IC.starf:IC.star}</button><b onclick="sdm(${J(x[0])})">${esc(x[0])}</b><span class="note">${GN[x[1]]}</span>${x[2]?`<button class="sb" onclick="delEx(${J(x[0])},${J(k)})" aria-label="מחק">${IC.trash}</button>`:''}</div>${S.dn===x[0]?demo(x[0],x[1]):''}`}).join('')+`<div class="er x" style="flex-wrap:wrap"><input aria-label="תרגיל חדש" id="ne_${esc(k)}" placeholder="תרגיל חדש" value="${S.nek===k?esc(S.nem):''}"><button class="btn2" onclick="addEx(${J(k)},${J(l)})">הוסף</button></div>`}
 function myEq(){const L=[['bw','משקל גוף']].concat(E.concat(CE()).filter(e=>S.eq.includes(e[0])));return `<p class="note">כוכב מעלה את התדירות של אביזר או תרגיל בתכנית.</p><div>${L.map(e=>{const k=e[0],fe=S.fv.eq.includes(k);return `<div class="er"><button class="sb ${fe?'on':''}" onclick="tgs('eq',${J(k)})" aria-label="מועדף">${fe?IC.starf:IC.star}</button><b>${esc(e[1])}</b><button class="sb" onclick="tgo(${J(k)})" aria-expanded="${!!S.op[k]}" aria-label="תרגילים">${S.op[k]?IC.dn.replace('M6 9l6 6 6-6','M6 15l6-6 6 6'):IC.dn}</button></div>`+(S.op[k]?exRows(k,e[1]):'')}).join('')}</div>`}
-const PL=[1.25,2.5,5,10,15,20,25];
-function awT(){if(!S.awt){const a=S.aw||{};S.awt={dumbbell:(a.dumbbell||[]).map(v=>[v,2]),kettle:(a.kettle||[]).map(v=>[v,1]),bar:20,pl:{}};if((a.barbell||[]).length){const m=Math.max(...a.barbell);S.awt.pl={'10':Math.max(0,Math.floor((m-20)/20))}}}return S.awt}
+const PL=[0.5,1.25,2.5,5,10,15,20,25];
+function awT(){if(S.awt&&!S.awt.dh)S.awt.dh={n:0,w:2};if(!S.awt){const a=S.aw||{};S.awt={dumbbell:(a.dumbbell||[]).map(v=>[v,2]),kettle:(a.kettle||[]).map(v=>[v,1]),bar:20,pl:{},dh:{n:0,w:2}};if((a.barbell||[]).length){const m=Math.max(...a.barbell);S.awt.pl={'10':Math.max(0,Math.floor((m-20)/20))}}}return S.awt}
 function awStep(v,d){const s=v<10?1:2.5;return Math.max(.5,Math.round((v+d*s)*2)/2)}
-function awSync(){const T=awT();S.aw=S.aw||{};['dumbbell','kettle'].forEach(k=>{S.aw[k]=[...new Set(T[k].filter(r=>r[1]>0).map(r=>r[0]))].sort((a,b)=>a-b)});
-  let t=new Set([0]);PL.forEach(p=>{const n=T.pl[p]||0,nx=new Set();t.forEach(x=>{for(let i=0;i<=n;i++)nx.add(Math.round((x+2*p*i)*100)/100)});t=nx});S.aw.barbell=S.eq.includes('barbell')&&Object.values(T.pl).some(v=>v>0)?[...t].map(x=>x+T.bar).filter(x=>x<=300).sort((a,b)=>a-b).slice(0,80):[];save();R()}
+// הרכבת משקלים מפלטות: base = משקל המוט/הידית, cap(p) = כמה פלטות p אפשר לשים בכל צד. מחזיר משקל כולל → פלטות לצד אחד (הכי מעט פלטות)
+const PLC=new Map();
+function plc(base,cap){const key=base+'|'+PL.map(cap).join(',');if(PLC.has(key))return PLC.get(key);let m=new Map([[0,[]]]);PL.forEach(p=>{const n=cap(p),nx=new Map(m);if(n>0)m.forEach((l,x)=>{for(let i=1;i<=n;i++){const y=Math.round((x+p*i)*100)/100,L2=l.concat(Array(i).fill(p));if(!nx.has(y)||nx.get(y).length>L2.length)nx.set(y,L2)}});m=nx});const o=new Map();m.forEach((l,x)=>{const t=Math.round((base+2*x)*100)/100;if(t<=300)o.set(t,l.slice().sort((a,b)=>b-a))});PLC.set(key,o);return o}
+// ידיות: בתרגיל עם שתי משקולות כל ידית צריכה זוג מכל פלטה, ולכן הזוגות מתחלקים בין הידיות
+function dhMap(){const T=awT(),hn=Math.min(2,T.dh.n||0);return hn&&S.eq.includes('dumbbell')?plc(T.dh.w,p=>Math.floor((T.pl[p]||0)/hn)):new Map()}
+function bbMap(){const T=awT();return S.eq.includes('barbell')&&Object.values(T.pl).some(v=>v>0)?plc(T.bar,p=>T.pl[p]||0):new Map()}
+function awFixed(k){return[...new Set(awT()[k].filter(r=>r[1]>0).map(r=>r[0]))].sort((a,b)=>a-b)}
+function awSync(){const T=awT();S.aw=S.aw||{};S.aw.kettle=awFixed('kettle');S.aw.dumbbell=[...new Set([...awFixed('dumbbell'),...dhMap().keys()])].sort((a,b)=>a-b);
+  S.aw.barbell=[...bbMap().keys()].sort((a,b)=>a-b).slice(0,120);save();R()}
+// מה להרכיב: "בכל צד: 5 + 2.5"
+function ldHint(ek,kg){kg=+kg;if(!kg||curLoc()!=='home')return'';let l=null;if(ek==='barbell')l=bbMap().get(kg);else if(ek==='dumbbell'&&!awFixed('dumbbell').includes(kg))l=dhMap().get(kg);if(!l)return'';const nm=ek==='barbell'?'על המוט':'על כל ידית';return l.length?nm+', בכל צד: '+l.join(' + '):'ידית ריקה, בלי פלטות'}
 function awW(k,i,d){const r=awT()[k][i];r[0]=awStep(r[0],d);awSync()}
 function awQ(k,i,d){const r=awT()[k][i];r[1]=Math.max(0,Math.min(20,r[1]+d));say(`${r[0]} ק״ג: ${r[1]} יחידות`);awSync()}
 function awDel(k,i){const r=awT()[k].splice(i,1)[0];if(r)say(`הוסר ${r[0]} ק״ג`);S.fx='awn_'+k;awSync()}
 function awAdd(k){const L=awT()[k],l=L[L.length-1];L.push([l?awStep(l[0],1):(k==='kettle'?8:4),k==='kettle'?1:2]);awSync()}
+function awDh(f,d){const T=awT();if(f==='n'){T.dh.n=Math.max(0,Math.min(4,T.dh.n+d));say(`ידיות מתכווננות: ${T.dh.n}`)}else{T.dh.w=Math.max(.5,Math.min(10,Math.round((T.dh.w+d*.5)*2)/2));say(`משקל ידית: ${T.dh.w} ק״ג`)}awSync()}
+function awTg(k){S.op['aw_'+k]=!S.op['aw_'+k];S.fx='awo_'+k;R()}
 function awBar(d){const T=awT();T.bar=Math.max(5,Math.min(25,T.bar+d*2.5));say(`משקל המוט: ${T.bar} ק״ג`);awSync()}
 function awP(p,d){const T=awT();T.pl[p]=Math.max(0,Math.min(10,(T.pl[p]||0)+d));say(`פלטות ${p} ק״ג: ${T.pl[p]} זוגות`);awSync()}
 const awSt=(lab,val,dn,up,unit,fk)=>`<div class="stp" role="group" aria-label="${lab}"><button onclick="${dn}" aria-label="פחות ${lab}"${fk?` data-f="${fk}-"`:''}>−</button><span class="n">${val}${unit||''}</span><button onclick="${up}" aria-label="יותר ${lab}"${fk?` data-f="${fk}+"`:''}>+</button></div>`;
@@ -603,18 +615,24 @@ function awQuick(k,v){const T=awT(),i=awIx(k,v);if(i>=0&&T[k][i][1]>0){T[k].spli
 function awNum(x){const v=parseFloat(String(x).replace(',','.'));return v>0&&v<=200?Math.round(v*2)/2:0}
 function awSet(k,i,x){const v=awNum(x),T=awT();if(!v){say('משקל לא תקין, אפשר בין 0.5 ל־200 ק״ג');R();return}T[k][i][0]=v;awNorm(k);S.fx=`aww_${k}_${awIx(k,v)}`;say(`עודכן ל־${v} ק״ג`);awSync()}
 function awAddV(k){const e=$('awn_'+k),v=awNum(e&&e.value);S.fx='awn_'+k;if(!v){say('יש להקליד משקל בין 0.5 ל־200 ק״ג');if(e)e.focus();return}const T=awT(),i=awIx(k,v);if(i>=0&&T[k][i][1]>0){say(`${v} ק״ג כבר בטבלה`);if(e){e.value='';e.focus()}return}if(i>=0)T[k][i][1]=k==='kettle'?1:2;else T[k].push([v,k==='kettle'?1:2]);awNorm(k);say(`נוסף ${v} ק״ג`);awSync()}
-function awUI(){const T=awT(),L=['dumbbell','kettle','barbell'].filter(k=>S.eq.includes(k)),nm=k=>E.find(e=>e[0]===k)[1];
-  return `<p class="note">מסמנים את המשקלים שיש בבית, ובטבלה מעדכנים כמה יחידות יש מכל אחד. המאמן יציע רק משקלים שקיימים אצלך.</p>${L.map(k=>k==='barbell'?`<div class="awt"><h3 class="awk">${nm(k)}</h3>
-   <div class="awr2"><b>משקל המוט</b>${awSt('משקל המוט',T.bar,'awBar(-1)','awBar(1)',' ק״ג','awbar')}</div>
-   <table class="awtb"><caption class="sr">פלטות: כמה זוגות יש מכל משקל</caption><thead><tr><th scope="col">פלטה</th><th scope="col">זוגות</th></tr></thead><tbody>${PL.map(p=>`<tr><th scope="row">${p} ק״ג</th><td>${awSt('זוגות של '+p+' ק״ג',T.pl[p]||0,`awP(${p},-1)`,`awP(${p},1)`,'',`awp_${p}`)}</td></tr>`).join('')}</tbody></table>
-   <p class="note">${(S.aw.barbell||[]).length?`אפשר להרכיב ${S.aw.barbell[0]}–${S.aw.barbell[S.aw.barbell.length-1]} ק״ג על המוט`:'מסמנים כמה זוגות פלטות יש לך'}</p></div>`
-  :(()=>{const R0=T[k],on=v=>R0.some(r=>r[0]===v&&r[1]>0),tot=R0.reduce((a,r)=>a+r[1],0);return `<div class="awt"><h3 class="awk">${nm(k)}</h3>
-   <span class="eye" id="awqh_${k}">מקישים על המשקלים שיש לך (ק״ג)</span>
+function awFixUI(k,nm){const T=awT(),R0=T[k],on=v=>R0.some(r=>r[0]===v&&r[1]>0),tot=R0.reduce((a,r)=>a+r[1],0);return `<span class="eye" id="awqh_${k}">מקישים על המשקלים שיש לך (ק״ג)</span>
    <div class="chips" role="group" aria-labelledby="awqh_${k}">${AWQ[k].map(v=>`<button class="chip ${on(v)?'on':''}" aria-pressed="${on(v)}" data-f="awq_${k}_${v}" onclick="awQuick('${k}',${v})">${v}</button>`).join('')}</div>
-   ${R0.length?`<table class="awtb"><caption class="sr">${nm(k)}: המשקלים שלי</caption><thead><tr><th scope="col">משקל (ק״ג)</th><th scope="col" class="cq">כמה ${awU(k)}</th><th scope="col" class="cx"><span class="sr">הסרה</span></th></tr></thead><tbody>
+   ${R0.length?`<table class="awtb"><caption class="sr">${nm}: המשקלים שלי</caption><thead><tr><th scope="col">משקל (ק״ג)</th><th scope="col" class="cq">כמה ${awU(k)}</th><th scope="col" class="cx"><span class="sr">הסרה</span></th></tr></thead><tbody>
    ${R0.map((r,i)=>`<tr><td><input class="n awin" type="number" inputmode="decimal" step="0.5" min="0.5" max="200" value="${r[0]}" aria-label="משקל בק״ג, שורה ${i+1}" data-f="aww_${k}_${i}" onchange="awSet('${k}',${i},this.value)"></td><td class="cq">${awSt(`כמות של ${r[0]} ק״ג`,r[1],`awQ('${k}',${i},-1)`,`awQ('${k}',${i},1)`,'',`awc_${k}_${i}`)}</td><td class="cx"><button class="sb" onclick="awDel('${k}',${i})" aria-label="הסר ${r[0]} ק״ג" data-f="awd_${k}_${i}">${IC.trash}</button></td></tr>`).join('')}</tbody></table>
-   <p class="awsum">סה״כ ${tot} ${awU(k)} · ${R0.filter(r=>r[1]>0).length} משקלים שונים</p>`:`<p class="note">עדיין לא סימנת משקלים.</p>`}
-   <div class="awadd"><input id="awn_${k}" class="n" type="number" inputmode="decimal" step="0.5" min="0.5" max="200" placeholder="משקל אחר, בק״ג" aria-label="משקל אחר לטבלה, בק״ג" data-f="awn_${k}" onkeydown="if(event.key==='Enter')awAddV('${k}')"><button class="btn2" data-f="awa_${k}" onclick="awAddV('${k}')">+ הוסף</button></div></div>`})()).join('')}`}
+   <p class="awsum">סה״כ ${tot} ${awU(k)} · ${R0.filter(r=>r[1]>0).length} משקלים שונים</p>`:''}
+   <div class="awadd"><input id="awn_${k}" class="n" type="number" inputmode="decimal" step="0.5" min="0.5" max="200" placeholder="משקל אחר, בק״ג" aria-label="משקל אחר לטבלה, בק״ג" data-f="awn_${k}" onkeydown="if(event.key==='Enter')awAddV('${k}')"><button class="btn2" data-f="awa_${k}" onclick="awAddV('${k}')">+ הוסף</button></div>`}
+function awSec(k,title,sum,body){const o=!!S.op['aw_'+k];return `<div class="awt"><button class="awh" onclick="awTg('${k}')" aria-expanded="${o}" data-f="awo_${k}"><span class="grow"><b class="awk">${title}</b><span class="note">${sum}</span></span><span class="sb">${o?IC.dn.replace('M6 9l6 6 6-6','M6 15l6-6 6 6'):IC.dn}</span></button>${o?`<div class="awb">${body}</div>`:''}</div>`}
+function awUI(){const T=awT(),nm=k=>E.find(e=>e[0]===k)[1],has=k=>S.eq.includes(k),lst=a=>a.length?(a.length>8?a[0]+'–'+a[a.length-1]:a.join(', '))+' ק״ג':'',out=[];
+  if(has('dumbbell')){const fx=awFixed('dumbbell'),dm=[...dhMap().keys()].sort((a,b)=>a-b),sm=[T.dh.n?`${T.dh.n} ידיות${dm.length?' · עד '+dm[dm.length-1]+' ק״ג':''}`:'',fx.length?fx.length+' במשקל קבוע':''].filter(Boolean).join(' · ')||'עדיין לא סימנת';
+    out.push(awSec('dumbbell',nm('dumbbell'),sm,`<h4 class="eye">ידיות שמרכיבים עליהן פלטות</h4>
+     <div class="awr2"><b>כמה ידיות</b>${awSt('ידיות מתכווננות',T.dh.n,'awDh(\'n\',-1)','awDh(\'n\',1)','','awdn')}</div>
+     ${T.dh.n?`<div class="awr2"><b>משקל ידית ריקה</b>${awSt('משקל ידית',T.dh.w,'awDh(\'w\',-1)','awDh(\'w\',1)',' ק״ג','awdw')}</div><p class="note">${dm.length>1?'אפשר להרכיב לכל יד: '+dm.join(', ')+' ק״ג':'מוסיפים פלטות בחלק ״פלטות״ למטה.'}</p>`:''}
+     <h4 class="eye" style="margin-top:8px">משקולות במשקל קבוע (אם יש)</h4>${awFixUI('dumbbell',nm('dumbbell'))}`))}
+  if(has('kettle')){const fx=awFixed('kettle');out.push(awSec('kettle',nm('kettle'),lst(fx)||'עדיין לא סימנת',awFixUI('kettle',nm('kettle'))))}
+  if(has('barbell')){const bm=S.aw.barbell||[];out.push(awSec('barbell','מוט ארוך',`מוט ${T.bar} ק״ג${bm.length>1?' · עד '+bm[bm.length-1]+' ק״ג':''}`,`<div class="awr2"><b>משקל המוט</b>${awSt('משקל המוט',T.bar,'awBar(-1)','awBar(1)',' ק״ג','awbar')}</div><p class="note">${bm.length>1?`אפשר להרכיב ${bm[0]}–${bm[bm.length-1]} ק״ג על המוט`:'מוסיפים פלטות בחלק ״פלטות״ למטה.'}</p>`))}
+  if(has('barbell')||(has('dumbbell')&&T.dh.n)){const np=PL.reduce((a,p)=>a+(T.pl[p]||0),0);out.push(awSec('plates','פלטות',np?np+' זוגות · משותפות'+(has('barbell')&&T.dh.n?' למוט ולידיות':''):'עדיין לא סימנת',`<p class="note">אותן פלטות משמשות את ${has('barbell')&&T.dh.n?'המוט והידיות':has('barbell')?'המוט':'הידיות'}. סופרים זוגות: שתי פלטות זהות = זוג אחד.</p>
+   <table class="awtb"><caption class="sr">פלטות: כמה זוגות יש מכל משקל</caption><thead><tr><th scope="col">פלטה</th><th scope="col">זוגות</th></tr></thead><tbody>${PL.map(p=>`<tr><th scope="row">${p} ק״ג</th><td>${awSt('זוגות של '+p+' ק״ג',T.pl[p]||0,`awP(${p},-1)`,`awP(${p},1)`,'',`awp_${p}`)}</td></tr>`).join('')}</tbody></table>`))}
+  return `<p class="note">לוחצים על סוג כדי לפתוח ולעדכן אותו. המאמן יציע רק משקלים שאפשר להרכיב אצלך.</p>${out.join('')}`}
 function saveAw(){awSync()}
 /* ---------- settings ---------- */
 function setP(k,v){S.P[k]=v;if(k==='focus')delete S.P.focusN;save();R()}
@@ -717,8 +735,8 @@ function fin(){const s=st(),c=cur(),last=w.q===w.Q.length-1;if(!s.wu&&c.gr!=='wa
 function adv(){if(w.q>=w.Q.length-1)return end(true);w.q++;w.ph='work';setT(T0());beep(900,.15);R();ms()}
 function back(){if(!w||w.ph==='done'||!w.q)return;w.q--;w.ph='work';setT(T0());R();ms()}
 function addR(n){if(!w||w.ph==='done')return;w.end+=n*1000;w.t+=n;w.tt=Math.max(w.tt,w.t);upd();wsave()}
-function wset(v){w.kgs[cur().name]=+v;wsave()}
-function wstep(d){const c=cur(),v=+(w.kgs[c.name]??sugW(c))||0,n=d>0?(v?upW(v,c.ek):stp(c.ek)):(v?dnW(v,c.ek):0);w.kgs[c.name]=n;const e=$('wv');if(e)e.value=n}
+function wset(v){w.kgs[cur().name]=+v;wsave();wph()}
+function wstep(d){const c=cur(),v=+(w.kgs[c.name]??sugW(c))||0,n=d>0?(v?upW(v,c.ek):stp(c.ek)):(v?dnW(v,c.ek):0);w.kgs[c.name]=n;const e=$('wv');if(e)e.value=n;wph()}
 function wrep(v){const c=cur(),s=st();if(s.wu)return;const a=w.sets[c.name]=w.sets[c.name]||[];a[s.s-1]={kg:c.w?(+(w.kgs[c.name]??sugW(c))||0):0,reps:+v};wsave()}
 /* ---------- אימון שממשיך גם אחרי טעינה מחדש, ופקודה מקיצור באייפון ----------
    קיצור ב-Shortcuts (למשל "היי סירי, סיימתי סט") פותח את הכתובת עם #next.
@@ -779,7 +797,8 @@ function work(){
   ${c.w?(s.wu?`<div class="row" style="justify-content:center"><span class="tag ac">${wk!=null?snapW(wk*.5,c.ek)+' ק״ג · ':''}כ־50% ממשקל העבודה</span></div>`:wIn(c)):''}
   ${c.tips&&c.tips.length?`${c.gr==='warm'||c.test?'':`<button class="ghost" style="align-self:center" onclick="w.tip=!w.tip;R()" aria-expanded="${!!w.tip}">${w.tip?'הסתר טכניקה':'דגשי טכניקה'} ${IC.dn}</button>`}${showT?`<ul class="tips">${c.tips.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>`:''}`:''}
   <div class="wact"><button class="btn" onclick="act()">${c.gr==='run'?'סיימתי קטע':c.t?'סיימתי':'סיימתי סט'}</button><div class="row" style="justify-content:space-between"><button class="ghost" onclick="back()" ${w.q?'':'disabled'}>${IC.cr} הקודם</button><button class="ghost" onclick="adv()">דלג ${IC.cl}</button></div></div></div>`}
-function wIn(c){const v=w.kgs[c.name]??sugW(c)??'';return `<div class="fld" style="align-items:center"><span>משקל בק״ג${isEst(c)&&sugW(c)!=null?' · הערכה, תקן לפי הצורך':''}</span><div class="stp lg"><button onclick="wstep(-1)" aria-label="הורד משקל">−</button><input id="wv" type="number" inputmode="decimal" step="0.5" value="${v}" oninput="wset(this.value)" aria-label="משקל"><button onclick="wstep(1)" aria-label="הוסף משקל">+</button></div></div>`}
+function wIn(c){const v=w.kgs[c.name]??sugW(c)??'';return `<div class="fld" style="align-items:center"><span>משקל בק״ג${isEst(c)&&sugW(c)!=null?' · הערכה, תקן לפי הצורך':''}</span><div class="stp lg"><button onclick="wstep(-1)" aria-label="הורד משקל">−</button><input id="wv" type="number" inputmode="decimal" step="0.5" value="${v}" oninput="wset(this.value)" aria-label="משקל"><button onclick="wstep(1)" aria-label="הוסף משקל">+</button></div></div><p id="wph" class="note" style="text-align:center"${ldHint(c.ek,v)?'':' hidden'}>${ldHint(c.ek,v)}</p>`}
+function wph(){const c=cur(),e=$('wph');if(!e||!c)return;const t=ldHint(c.ek,w.kgs[c.name]);e.hidden=!t;e.textContent=t}
 function doneUI(){const run=w.k==='run',mins=Math.max(1,Math.round(w.el/60)),vol=Math.round(Object.values(w.sets).reduce((a,l)=>a+Array.from(l).filter(Boolean).reduce((b,x)=>b+(x.kg||0)*(x.reps||0),0),0));
   return `<div class="wh" style="padding-top:28px"><div class="okc">${IC.ck}</div><h1>${w.as?'בדיקת הרמה הושלמה':'כל הכבוד'}</h1><p class="note">${run?'ריצה':'אימון'} של ${mins} דקות נשמר</p></div>
   <div class="stats"><div class="stat"><span>דקות</span><b>${mins}</b></div><div class="stat"><span>${run?'קטעים':'סטים'}</span><b>${w.dn}</b></div><div class="stat"><span>${run?'תרגילים':'נפח (ק״ג)'}</span><b>${run?w.D.length:vol.toLocaleString('he-IL')}</b></div></div>
