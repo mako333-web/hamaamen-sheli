@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>html,body,button,a,input,select,textarea,label,summary,[onclick]{touch-action:manipulation}:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>המאמן שלי</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#071a1b">
@@ -250,7 +250,7 @@ button.row{min-height:44px}
 <script>
 /* ---------- data ---------- */
 const Q=[
-{k:'goal',t:'מה המטרה העיקרית שלך?',get o(){return[['strength','כוח'],['muscle','בניית שריר'],['fat','חיטוב ושריפת שומן'],['endur','סיבולת'],...S.cg.map(g=>[g.id,g.name])]}},
+{k:'goal',t:'מה המטרות שלך?',get o(){return[['strength','כוח'],['muscle','בניית שריר'],['fat','חיטוב ושריפת שומן'],['endur','סיבולת'],...S.cg.map(g=>[g.id,g.name])]}},
 {k:'days',t:'כמה ימים בשבוע מתאים לך להתאמן?',o:[[2,'2 ימים'],[3,'3 ימים'],[4,'4 ימים'],[5,'5 ימים']]},
 {k:'min',t:'כמה זמן יש לך לאימון?',o:[[20,'20 דקות'],[30,'30 דקות'],[45,'45 דקות'],[60,'60 דקות']]},
 {k:'lvl',t:'מה הרמה שלך?',o:[['b','מתחיל'],['m','בינוני'],['a','מתקדם']]},
@@ -356,6 +356,12 @@ const dt=(k,title,body)=>`<details class="card" ${S.op['d'+k]?'open':''} ontoggl
 
 /* ---------- training logic ---------- */
 const RL=()=>S.P.rlvl||S.P.lvl,LN={b:'מתחיל',m:'בינוני',a:'מתקדם'},GBN={strength:'כוח',muscle:'שריר',fat:'חיטוב',endur:'סיבולת'};
+function gls(){const P=S.P,ok=id=>!!(G[id]||S.cg.some(g=>g.id===id));let a=(Array.isArray(P.goals)?P.goals:[]).filter(ok);if(!a.length&&P.goal&&ok(P.goal))a=[P.goal];return[...new Set(a)].slice(0,3)}
+function gHas(k){return gls().some(id=>gb(id)===k)}
+function gmsg(t){const e=$('gm');if(e){e.hidden=!t;e.textContent=t}}
+function tgGoal(id){let a=gls();if(a.includes(id)){if(S.v!=='wiz'&&a.length===1)return gmsg('צריך לפחות מטרה אחת.');a=a.filter(x=>x!==id)}else{if(a.length>=3)return gmsg('אפשר לבחור עד 3 מטרות. כדי להחליף, קודם מבטלים אחת.');a.push(id)}S.P.goals=a;S.P.goal=a[0]||'';save();R()}
+function gnext(){if(gls().length){S.P.goals=gls();S.P.goal=S.P.goals[0];S.q++;save();R()}}
+function goalPick(){const a=gls(),q=Q[0];return `<div class="chips">${q.o.map(o=>{const j=a.indexOf(o[0]);return `<button class="chip ${j>=0?'on':''}" aria-pressed="${j>=0}" onclick="tgGoal(${J(o[0])})">${j>=0?(j+1)+'. ':''}${esc(o[1])}</button>`}).join('')}</div><p class="note">אפשר לבחור עד 3. הראשונה היא המטרה הראשית והשאר משתלבות בתכנית.</p><p id="gm" class="note" role="status" hidden></p>`}
 function gb(id){return G[id]?id:(S.cg.find(g=>g.id===id)||{}).base||'muscle'}
 // שבוע אימון = שבוע שבו באמת התאמנו, כך שהפסקה לא מקפיצה את מחזור ההעמסה וההקלה
 function fitWeek(){const f=S.log.filter(l=>l.k==='fit');if(!f.length)return 0;const t0=f[0].d,cw=Math.floor((Date.now()-t0)/6048e5);return new Set(f.map(l=>Math.floor((l.d-t0)/6048e5)).filter(x=>x<cw)).size}
@@ -375,7 +381,7 @@ function lstep(ci){const c=LAD[ci],v=S.lv[c.n];return v!=null?Math.max(0,Math.mi
 function ladPick(pool){const keep=new Set();LAD.forEach((c,ci)=>{const av=c.s.map((n,i)=>pool.some(x=>x[0]===n)?i:-1).filter(i=>i>=0);if(!av.length)return;const cur=lstep(ci),lo=av.filter(i=>i<=cur);keep.add(c.s[lo.length?lo[lo.length-1]:av[0]])});return pool.filter(x=>CH[x[0]]==null||keep.has(x[0]))}
 function plan(mo,lc){
   lc=lc||S.P.loc||'home';S.curLoc=lc;
-  const {goal,lvl,lim}=S.P,min=mo||S.P.min||45,days=S.cal.fit.length?Math.min(5,Math.max(2,S.cal.fit.length)):(S.P.days||3),gk=gb(goal),g=G[gk]||G.muscle,av=new Set(['bw',...(lc==='home'?['home',...S.eq]:LOCEQ[lc]||S.eq)]),lp=LPREF[lc],lr=LR[lvl]??0;
+  const {lvl,lim}=S.P,goal=gls()[0]||S.P.goal,sec=new Set(gls().slice(1).map(gb)),min=mo||S.P.min||45,days=S.cal.fit.length?Math.min(5,Math.max(2,S.cal.fit.length)):(S.P.days||3),gk=gb(goal),g=G[gk]||G.muscle,av=new Set(['bw',...(lc==='home'?['home',...S.eq]:LOCEQ[lc]||S.eq)]),lp=LPREF[lc],lr=LR[lvl]??0;
   const all=[...X,...S.cx.map(c=>[c.n,c.k||'cx:'+c.e,c.g,''])].filter(x=>x[1].split('+').every(e=>av.has(e))&&!(lim&&lim!=='none'&&x[3].includes(lim))&&!(S.P.lims||[]).some(l=>x[3].includes(l))&&!(S.P.nx||[]).includes(x[0])&&!(S.P.ng||[]).includes(x[2])&&(!x[4]||LR[x[4]]<=lr||CH[x[0]]!=null));
   S.avn=new Set(all.map(x=>x[0]));
   const base=ladPick(all),pool=base.filter(x=>!(x[0] in EZ&&lr>EZ[x[0]]));
@@ -385,9 +391,9 @@ function plan(mo,lc){
   const td=Math.max(20,({b:30,m:40,a:45}[lvl]||30)+5*Math.min(6,Math.floor(nf/3))-(dl?10:0));
   const T=TPL[days]||TPL[3],out=[];
   for(let d=0;d<days;d++){
-    const tpl=S.P.focus?[...T[d%T.length],S.P.focus,S.P.focus]:T[d%T.length],used=new Set(),usedP=new Set();let list=[];
+    const tpl=S.P.focus?[...T[d%T.length],S.P.focus,S.P.focus]:T[d%T.length],used=new Set(),usedP=new Set();let list=[],sd=0;
     for(let i=0;i<n;i++){
-      let gr=tpl[i%tpl.length];if(gk==='fat'&&i%3===2)gr='cardio';
+      let gr=tpl[i%tpl.length];if(gk==='fat'&&i%3===2)gr='cardio';else if(sec.has('fat')&&i%4===3)gr='cardio';
       const src=pool.length?pool:base;
       let p=src.filter(x=>x[2]===gr&&!used.has(x[0]));
       if(!p.length)p=base.filter(x=>x[2]===gr&&!used.has(x[0]));
@@ -398,9 +404,12 @@ function plan(mo,lc){
       const fav=p.filter(isFav),hard=p.filter(x=>x[4]),pl2=fav.length?fav:(hard.length&&i%2===0?hard:p),x=pl2[(d+i)%pl2.length];
       used.add(x[0]);usedP.add(PT(x[0],x[2]));
       const t=x[2]==='cardio'||TIM.test(x[0]),wt=!t&&/dumbbell|kettle|barbell|machine|cable/.test(x[1]),iso=ISO.has(x[0]),comp=!iso&&['push','pull','legs'].includes(x[2]);
-      let lo=null,hi=null,capT=0;
-      if(!t){const rg=String(iso?g.r2:(!wt&&gk==='strength'?G.muscle.r:g.r)).split('–').map(Number);lo=rg[0];hi=rg[rg.length-1];{const b0=S.bp[x[0]]||0,cp=rcap(hi,0),b=Math.min(b0,cp);if(!wt||b){lo=Math.max(1,lo+b);hi=Math.max(lo,hi+b)}if(b>0&&b>=cp)capT=1}}
-      list.push({w:wt?1:0,ek:(x[1].match(/dumbbell|kettle|barbell|machine|cable/)||[''])[0],lv:CH[x[0]],name:x[0],set:Math.min(5,sets+(pk&&comp?1:0)),reps:t?td+' שנ׳':(lo===hi?String(lo):lo+'–'+hi),lo,hi,t,dur:t?td:0,rest:iso?Math.round(g.rest*.7):g.rest,gr:x[2],tips:capT?[wt?'זה היעד הגבוה. כדי להתקדם הוסף משקולת כבדה יותר':'ירידה איטית של 3 שניות בכל חזרה, או תיק גב עם משקל',...tipsFor(x)].slice(0,2):tipsFor(x),comp,iso});
+      let lo=null,hi=null,capT=0,gg=g;
+      // מטרות משניות: כוח = התרגיל המורכב הראשון עם משקולת בטווח כוח; שריר = תרגילי בידוד בטווח שריר; סיבולת = עוד 10 שנ׳ בתרגילי זמן ומנוחה קצרה בבידוד
+      if(sec.has('strength')&&wt&&comp&&!sd){gg=G.strength;sd=1}else if(sec.has('muscle')&&iso)gg=G.muscle;
+      const dur=td+(t&&sec.has('endur')?10:0),rst=Math.round((iso?gg.rest*.7:gg.rest)*(sec.has('endur')&&!comp?.8:1));
+      if(!t){const rg=String(iso?gg.r2:(!wt&&gk==='strength'?G.muscle.r:gg.r)).split('–').map(Number);lo=rg[0];hi=rg[rg.length-1];{const b0=S.bp[x[0]]||0,cp=rcap(hi,0),b=Math.min(b0,cp);if(!wt||b){lo=Math.max(1,lo+b);hi=Math.max(lo,hi+b)}if(b>0&&b>=cp)capT=1}}
+      list.push({w:wt?1:0,ek:(x[1].match(/dumbbell|kettle|barbell|machine|cable/)||[''])[0],lv:CH[x[0]],name:x[0],set:Math.min(5,sets+(pk&&comp?1:0)),reps:t?dur+' שנ׳':(lo===hi?String(lo):lo+'–'+hi),lo,hi,t,dur:t?dur:0,rest:rst,gr:x[2],tips:capT?[wt?'זה היעד הגבוה. כדי להתקדם הוסף משקולת כבדה יותר':'ירידה איטית של 3 שניות בכל חזרה, או תיק גב עם משקל',...tipsFor(x)].slice(0,2):tipsFor(x),comp,iso});
     }
     if(gk!=='fat'){const rk=c=>c.gr==='cardio'?3:c.gr==='core'?2:c.iso?1:0;list=list.map((c,j)=>[c,j]).sort((a,b)=>rk(a[0])-rk(b[0])||a[1]-b[1]).map(a=>a[0])}
     if(ssOn){let L=0;for(let j=0;j+1<list.length;j++){const a=list[j],b=list[j+1];if(a.t||b.t||a.set!==b.set)continue;if(a.gr!==b.gr||(a.iso&&b.iso)){a.ss=b.ss='ABCDE'[L++];j++}}}
@@ -432,15 +441,16 @@ function runPlan(o){const r=runInfo(o),W={name:'חימום – הליכה מהי
 /* ---------- wizard ---------- */
 function wtop(i){const tot=Q.length+2;return `<div class="row">${i?`<button class="ic" onclick="S.q--;R()" aria-label="חזרה">${IC.cr}</button>`:''}<div class="prog grow"><i style="width:${(i+1)/tot*100}%"></i></div><span class="eye n">${i+1}/${tot}</span></div>`}
 function wiz(){if(S.q>Q.length)return notesUI();if(S.q===Q.length)return bodyUI();const q=Q[S.q];
-  return `${wtop(S.q)}<h1>${q.t}</h1><div class="opts">${q.o.map((o,i)=>`<button class="opt ${S.P[q.k]===o[0]?'on':''}" aria-pressed="${!!(S.P[q.k]===o[0])}" onclick="pick(${i})"><span>${esc(o[1])}</span>${IC.ck}</button>`).join('')}</div>${q.k==='goal'?dt('g','מטרה אחרת',goalUI()):''}`}
+  if(q.k==='goal'){const a=gls();return `${wtop(S.q)}<h1>${q.t}</h1><p class="note">אפשר לבחור עד 3. הראשונה שבוחרים היא המטרה הראשית, והשאר משתלבות באימון.</p><div class="opts">${q.o.map(o=>{const j=a.indexOf(o[0]);return `<button class="opt ${j>=0?'on':''}" aria-pressed="${j>=0}" onclick="tgGoal(${J(o[0])})"><span>${esc(o[1])}${j===0?' <span class="tag ac">ראשית</span>':j>0?' <span class="tag">משנית</span>':''}</span>${IC.ck}</button>`}).join('')}</div><p id="gm" class="note" role="status" hidden></p>${dt('g','מטרה אחרת',goalUI())}<button class="btn" onclick="gnext()" ${a.length?'':'disabled'}>המשך</button>`}
+  return `${wtop(S.q)}<h1>${q.t}</h1><div class="opts">${q.o.map((o,i)=>`<button class="opt ${S.P[q.k]===o[0]?'on':''}" aria-pressed="${!!(S.P[q.k]===o[0])}" onclick="pick(${i})"><span>${esc(o[1])}</span>${IC.ck}</button>`).join('')}</div>`}
 function pick(i){const q=Q[S.q];S.P[q.k]=q.o[i][0];S.q++;save();R()}
 function bodyUI(){return `${wtop(Q.length)}<h1>מה המשקל שלך?</h1><p class="note">לחישוב משקלי ההתחלה בתרגילי משקולות. אפשר לדלג.</p><div class="fld"><span>משקל בק״ג</span><input aria-label="משקל בק״ג" id="bk" type="number" inputmode="decimal" step="0.1" value="${S.P.kg||''}"></div><button class="btn" onclick="bsave()">המשך</button>`}
 function bsave(){const e=$('bk'),v=e?+e.value:0;if(v>20&&v<300){S.P.kg=v;if(!S.wt.length||S.wt[S.wt.length-1].kg!==v)S.wt.push({d:Date.now(),kg:v})}S.q++;save();R()}
 function notesUI(){return `${wtop(Q.length+1)}<h1>משהו שחשוב שאדע?</h1><p class="note">תרגילים אהובים או פחות, כאבים, מה לחזק. אפשר לדלג.</p><textarea id="nt" rows="4" placeholder="למשל: לא אוהב ברפי. כואבות לי הברכיים. רוצה לחזק גב.">${esc(S.P.notes)}</textarea><button class="btn" onclick="nsave(1)">המשך לציוד</button>`}
 function pg(k){S.gnv=$('gn').value;S.gb=k;R()}
 function goalUI(){return `<input aria-label="שם המטרה" id="gn" placeholder="למשל: להתכונן למרתון" value="${esc(S.gnv)}"><div class="fld"><span>לבסס את האימונים על</span><div class="chips">${Object.keys(GBN).map(k=>`<button class="chip ${S.gb===k?'on':''}" aria-pressed="${!!(S.gb===k)}" onclick="pg(${J(k)})">${GBN[k]}</button>`).join('')}</div></div><button class="btn2" onclick="addGoal()">הוסף מטרה</button>${S.cg.length?`<div class="chips">${S.cg.map(g=>`<button class="chip" onclick="delGoal(${J(g.id)})" aria-label="מחק ${esc(g.name)}">${esc(g.name)} ${IC.x}</button>`).join('')}</div>`:''}`}
-function addGoal(){const n=cl($('gn').value);if(!n)return;const id='c'+Date.now();S.cg.push({id,name:n,base:S.gb});S.P.goal=id;S.gnv='';if(S.v==='wiz')S.q++;save();R()}
-function delGoal(id){S.cg=S.cg.filter(g=>g.id!==id);if(S.P.goal===id)S.P.goal='muscle';save();R()}
+function addGoal(){const n=cl($('gn').value);if(!n)return;const id='c'+Date.now();S.cg.push({id,name:n,base:S.gb});const a=gls();if(a.length<3){a.push(id);S.P.goals=a;S.P.goal=a[0]}S.gnv='';save();R();if(a.length>=3&&!a.includes(id))gmsg('המטרה נשמרה. כדי לבחור אותה, קודם מבטלים מטרה אחרת.')}
+function delGoal(id){S.cg=S.cg.filter(g=>g.id!==id);let a=gls().filter(x=>x!==id);if(!a.length)a=['muscle'];S.P.goals=a;S.P.goal=a[0];save();R()}
 function parseNotes(t){const nx=[],nf=[],ng=[],lims=[];let foc='';const NEG=/לא |בלי|שונא|אל /,PRE=/אוהב|רוצה|מעדיף|חשוב|מתמקד|להתמקד|לחזק/,PAIN=/כאב|כואב|פציעה|פצוע|בעיה|רגיש|ניתוח|להימנע/,KW=['ברפי','שכיבות','סקוואט','לאנג','דדליפט','פלאנק','מתח','קפיצות','גומיי','קטלבל','כפיפות בטן'],AR={'ברכ':'k','כתף':'s','כתפיים':'s','גב':'b'},FW={'חזה':'push','כתפיים':'push','גב':'pull','רגליים':'legs','בטן':'core'},ALL=[...X.map(x=>x[0]),...S.cx.map(c=>c.n)];
 t.split(/[.,;!?\n]/).forEach(c=>{if(!c.trim())return;const neg=NEG.test(c),pre=PRE.test(c),pain=PAIN.test(c);KW.forEach(k=>{if(c.includes(k))ALL.forEach(n=>{if(n.includes(k)){if(neg)nx.push(n);else if(pre)nf.push(n)}})});if(c.includes('קרדיו')&&neg)ng.push('cardio');Object.keys(AR).forEach(a=>{if(c.includes(a)&&pain&&!lims.includes(AR[a]))lims.push(AR[a])});if(pre&&!pain&&!neg)Object.keys(FW).forEach(a=>{if(c.includes(a))foc=FW[a]})});
 S.P.nx=[...new Set([...nx,...(S.P.fnx||[])])];S.P.nf=[...new Set(nf)].filter(n=>!(S.P.fnx||[]).includes(n));S.P.ng=ng;S.P.lims=[...new Set([...lims,...(S.P.flims||[])])];if(foc){S.P.focus=foc;S.P.focusN=1}else if(S.P.focusN){delete S.P.focus;delete S.P.focusN}}
@@ -559,16 +569,19 @@ async function scan(f){
   }catch(e){say((SCE[e&&e.code]||'הזיהוי נכשל. אפשר לנסות שוב או לסמן ידנית.')+(e&&e.code?' (קוד: '+e.code+')':''))}
 }
 function ge(g){S.eg=g;S.enm=$('en')?cl($('en').value):'';S.exm=$('ex')?exs($('ex').value):'';R()}
-function eqUI(){return `<input aria-label="שם הציוד" id="en" placeholder="שם הציוד, למשל כבלים" value="${esc(S.enm)}"><input aria-label="תרגילים לציוד הזה" id="ex" placeholder="תרגילים, מופרדים בפסיק (לא חובה)" value="${esc(S.exm)}"><div class="chips">${Object.keys(GN).map(g=>`<button class="chip ${S.eg===g?'on':''}" aria-pressed="${!!(S.eg===g)}" onclick="ge(${J(g)})">${GN[g]}</button>`).join('')}</div><button class="btn2" onclick="addEq()">הוסף ציוד</button>${CE().length?`<div class="chips">${CE().map(e=>`<button class="chip" onclick="delEq(${J(e[1])})" aria-label="מחק ${esc(e[1])}">${esc(e[1])} ${IC.x}</button>`).join('')}</div>`:''}`}
-function addEq(){const e=cl($('en').value),g=S.eg||'push',nm=exs($('ex').value).split(',').map(x=>x.trim()).filter(Boolean).slice(0,10);if(!e)return;(nm.length?nm:['תרגיל '+GN[g]+' עם '+e]).forEach(n=>S.cx.push({n:n.slice(0,40),e,g}));if(!S.eq.includes('cx:'+e))S.eq.push('cx:'+e);S.enm='';S.exm='';save();R()}
+function eqUI(){return `<input aria-label="שם הציוד" id="en" placeholder="שם הציוד, למשל כבלים" value="${esc(S.enm)}"><input aria-label="תרגילים לציוד הזה" id="ex" placeholder="תרגילים, מופרדים בפסיק (לא חובה)" value="${esc(S.exm)}"><p class="note">לא צריך לבחור סוג אימון: האפליקציה מזהה לבד לפי שם הציוד והתרגילים.</p><button class="btn2" onclick="addEq()">הוסף ציוד</button>${CE().length?`<div class="chips">${CE().map(e=>`<button class="chip" onclick="delEq(${J(e[1])})" aria-label="מחק ${esc(e[1])}">${esc(e[1])} ${IC.x}</button>`).join('')}</div>`:''}`}
+const GKW=[['core',/הרמות? רגליים|הרמת רגליים|leg raise|גלגל בטן|ab wheel/i],['cardio',/מכונת חתירה|מכשיר חתירה|חתירה אירובית|rowing machine|rower|חבל קפיצה|jump rope|stepper|סטפר/i],['legs',/רגל|סקוו?ט|לאנג|מכרע|ירך|ירכיים|ישבן|עכוז|תאומ|ברכ|דדליפט|הרמת אגן|גשר|עלייה על|squat|lunge|leg|deadlift|calf|glute|hip|thrust|step.?up/i],['cardio',/ריצ|הליכ|אופני|אליפטי|הליכון|קפיצ|ברפי|אירובי|ספינינג|treadmill|bike|cycl|elliptic|jump|skip|cardio|\brun|burpee|spin/i],['core',/בטן|ליבה|פלאנק|קרש|רוסי|מספריים|סיבובי|plank|crunch|\babs?\b|core|twist|sit.?up/i],['pull',/משיכ|חתיר|מתח|ביספס|יד קדמית|כפיפו?ת מרפק|פולי עליון|פייס פול|פול ?דאון|גב|row|pull|chin|curl|bicep|\blats?\b|back/i],['push',/לחיצ|שכיב|דחיפ|מקבילים|טריספס|יד אחורית|פשיטת מרפק|פרפר|חזה|כתפ|press|push|dip|fly|chest|shoulder|tricep/i]];
+// מזהה לבד לאיזה סוג אימון שייך תרגיל או ציוד לפי השם
+function gx(t){const m=GKW.find(k=>k[1].test(String(t||'')));return m?m[0]:''}
+function addEq(){const e=cl($('en').value),g0=gx(e),nm=exs($('ex').value).split(',').map(x=>x.trim()).filter(Boolean).slice(0,10);if(!e)return;const L=nm.length?nm.map(n=>({n:n.slice(0,40),e,g:gx(n)||g0||'core'})):(g0?[g0]:['push','pull','legs']).map(g=>({n:'תרגיל '+GN[g]+' עם '+e,e,g}));L.forEach(o=>S.cx.push(o));S.msg='הוספתי: '+e+' ('+[...new Set(L.map(o=>GN[o.g]))].join(', ')+'). זיהיתי לבד לאיזה אימון זה שייך.';if(!S.eq.includes('cx:'+e))S.eq.push('cx:'+e);S.enm='';S.exm='';save();R()}
 function delEq(e){S.cx=S.cx.filter(c=>c.k||c.e!==e);S.eq=S.eq.filter(k=>k!=='cx:'+e);save();R()}
 function exOf(k){return[...X.filter(x=>x[1].split('+').includes(k)||(k==='bw'&&x[1]==='home')).map(x=>[x[0],x[2],0]),...S.cx.filter(c=>(c.k||'cx:'+c.e)===k).map(c=>[c.n,c.g,1])]}
 function tgs(t,id){const a=S.fv[t];S.fv[t]=a.includes(id)?a.filter(x=>x!==id):[...a,id];save();R()}
 function tgo(k){S.op[k]=!S.op[k];R()}
 function sg(g,k){const e=$('ne_'+k);S.nem=e?cl(e.value):'';S.nek=k;S.eg=g;R()}
-function addEx(k,l){const e=$('ne_'+k),n=cl(e&&e.value);if(!n)return;const o={n,e:l,g:S.eg||'push'};if(!k.startsWith('cx:'))o.k=k;S.cx.push(o);S.nem='';S.nek='';save();R()}
+function addEx(k,l){const e=$('ne_'+k),n=cl(e&&e.value);if(!n)return;const gc={};exOf(k).forEach(x=>gc[x[1]]=(gc[x[1]]||0)+1);const o={n,e:l,g:gx(n)||Object.keys(gc).sort((a,b)=>gc[b]-gc[a])[0]||'core'};if(!k.startsWith('cx:'))o.k=k;S.cx.push(o);S.nem='';S.nek='';save();R()}
 function delEx(n,k){S.cx=S.cx.filter(c=>!(c.n===n&&(c.k||'cx:'+c.e)===k));S.fv.ex=S.fv.ex.filter(x=>x!==n);save();R()}
-function exRows(k,l){return exOf(k).map(x=>{const f=S.fv.ex.includes(x[0]);return `<div class="er x"><button class="sb ${f?'on':''}" onclick="tgs('ex',${J(x[0])})" aria-label="מועדף">${f?IC.starf:IC.star}</button><b onclick="sdm(${J(x[0])})">${esc(x[0])}</b><span class="note">${GN[x[1]]}</span>${x[2]?`<button class="sb" onclick="delEx(${J(x[0])},${J(k)})" aria-label="מחק">${IC.trash}</button>`:''}</div>${S.dn===x[0]?demo(x[0],x[1]):''}`}).join('')+`<div class="er x" style="flex-wrap:wrap"><input aria-label="תרגיל חדש" id="ne_${esc(k)}" placeholder="תרגיל חדש" value="${S.nek===k?esc(S.nem):''}"><div class="chips">${Object.keys(GN).map(g=>`<button class="chip ${S.eg===g?'on':''}" aria-pressed="${!!(S.eg===g)}" onclick="sg(${J(g)},${J(k)})">${GN[g]}</button>`).join('')}</div><button class="btn2" onclick="addEx(${J(k)},${J(l)})">הוסף</button></div>`}
+function exRows(k,l){return exOf(k).map(x=>{const f=S.fv.ex.includes(x[0]);return `<div class="er x"><button class="sb ${f?'on':''}" onclick="tgs('ex',${J(x[0])})" aria-label="מועדף">${f?IC.starf:IC.star}</button><b onclick="sdm(${J(x[0])})">${esc(x[0])}</b><span class="note">${GN[x[1]]}</span>${x[2]?`<button class="sb" onclick="delEx(${J(x[0])},${J(k)})" aria-label="מחק">${IC.trash}</button>`:''}</div>${S.dn===x[0]?demo(x[0],x[1]):''}`}).join('')+`<div class="er x" style="flex-wrap:wrap"><input aria-label="תרגיל חדש" id="ne_${esc(k)}" placeholder="תרגיל חדש" value="${S.nek===k?esc(S.nem):''}"><button class="btn2" onclick="addEx(${J(k)},${J(l)})">הוסף</button></div>`}
 function myEq(){const L=[['bw','משקל גוף']].concat(E.concat(CE()).filter(e=>S.eq.includes(e[0])));return `<p class="note">כוכב מעלה את התדירות של אביזר או תרגיל בתכנית.</p><div>${L.map(e=>{const k=e[0],fe=S.fv.eq.includes(k);return `<div class="er"><button class="sb ${fe?'on':''}" onclick="tgs('eq',${J(k)})" aria-label="מועדף">${fe?IC.starf:IC.star}</button><b>${esc(e[1])}</b><button class="sb" onclick="tgo(${J(k)})" aria-expanded="${!!S.op[k]}" aria-label="תרגילים">${S.op[k]?IC.dn.replace('M6 9l6 6 6-6','M6 15l6-6 6 6'):IC.dn}</button></div>`+(S.op[k]?exRows(k,e[1]):'')}).join('')}</div>`}
 const PL=[1.25,2.5,5,10,15,20,25];
 function awT(){if(!S.awt){const a=S.aw||{};S.awt={dumbbell:(a.dumbbell||[]).map(v=>[v,2]),kettle:(a.kettle||[]).map(v=>[v,1]),bar:20,pl:{}};if((a.barbell||[]).length){const m=Math.max(...a.barbell);S.awt.pl={'10':Math.max(0,Math.floor((m-20)/20))}}}return S.awt}
@@ -615,7 +628,7 @@ function bkIn(f){if(!f)return;const r=new FileReader(),m=t=>{const e=$('bkm');if
 function settings(){const P=S.P,chs=(k,o)=>`<div class="chips">${o.map(x=>`<button class="chip ${P[k]===x[0]?'on':''}" aria-pressed="${!!(P[k]===x[0])}" onclick="setP(${J(k)},${J(x[0])})">${esc(x[1])}</button>`).join('')}</div>`,seg=(k,o)=>`<div class="seg">${o.map(x=>`<button class="${P[k]===x[0]?'on':''}" aria-pressed="${!!(P[k]===x[0])}" onclick="setP(${J(k)},${J(x[0])})">${x[1]}</button>`).join('')}</div>`,days=k=>`<div class="wk">${DN.map((m,j)=>`<button class="d ${S.cal[K[k]].includes(j)?'p'+k:''}" aria-pressed="${S.cal[K[k]].includes(j)}" onclick="tgd(${k},${j})"><b>${m}</b></button>`).join('')}</div>`,mn=P.min||45,pc=P.pace||PD[RL()]||450,l=S.wt[S.wt.length-1],f=S.wt[0],ks=Object.keys(S.ld);
   return `${hd('הגדרות')}${acctUI()}
   <div class="grp"><h2>התכנית</h2><section class="card list">
-   <div class="set"><b>מטרה</b>${chs('goal',Q[0].o)}</div>
+   <div class="set"><b>מטרות</b>${goalPick()}</div>
    <div class="set"><b>רמה</b>${seg('lvl',Q[3].o)}</div>
    <div class="set"><div class="row"><b>זמן אימון רגיל</b><div class="stp"><button onclick="setP('min',${setMin(mn-5)})" aria-label="פחות">−</button><span class="n">${mn} דק׳</span><button onclick="setP('min',${setMin(mn+5)})" aria-label="יותר">+</button></div></div></div>
    <div class="set"><b>להימנע מעומס על</b>${chs('lim',Q[4].o)}</div>
@@ -629,7 +642,7 @@ function settings(){const P=S.P,chs=(k,o)=>`<div class="chips">${o.map(x=>`<butt
   </section></div>
   <div class="grp"><h2>לוח שבועי</h2><section class="card list"><div class="set"><b>ימי כוח</b>${days(0)}</div><div class="set"><b>ימי ריצה</b>${days(1)}</div></section></div>
   <div class="grp"><h2>ריצה וגוף</h2><section class="card list">
-   <div class="set"><div class="row"><b>קצב יעד לק״מ</b><div class="stp"><button onclick="setP('pace',${Math.min(600,pc+10)})" aria-label="איטי יותר">−</button><span class="n">${fmt(pc)}</span><button onclick="setP('pace',${Math.max(240,pc-10)})" aria-label="מהיר יותר">+</button></div></div></div>
+   <div class="set"><div class="row"><b>קצב יעד לק״מ<div class="note">דקות לק״מ. פחות זמן = ריצה מהירה יותר</div></b><div class="stp"><button onclick="setP('pace',${Math.max(240,pc-10)})" aria-label="פחות זמן לק״מ, מהיר יותר">−</button><span class="n">${fmt(pc)}</span><button onclick="setP('pace',${Math.min(600,pc+10)})" aria-label="יותר זמן לק״מ, איטי יותר">+</button></div></div></div>
    <div class="set"><div class="row"><b>משקל גוף</b><input aria-label="משקל גוף בק״ג" id="wk2" class="n" type="number" inputmode="decimal" step="0.1" value="${l?l.kg:''}" style="width:92px"><button class="btn2" onclick="sw()">עדכן</button></div>${S.wt.length>1?`<p class="note n">${(l.kg-f.kg>0?'+':'')+(l.kg-f.kg).toFixed(1)} ק״ג מהמדידה הראשונה</p>`:''}</div>
    <div class="set"><button class="row" onclick="go('assess')"><b>בדיקת רמה מחדש</b>${IC.cl}</button></div>
   </section></div>
@@ -757,7 +770,7 @@ function work(){
   const tags=[];
   if(c.set>1||s.wu)tags.push(`<span class="tag">${s.wu?'סט חימום':(c.km?'ק״מ':'סט')+' '+s.s+' מתוך '+c.set}</span>`);
   if(!c.t&&!c.test&&!s.wu&&c.gr!=='warm')tags.push(`<span class="tag ac">${rir()} חזרות במאגר</span>`);
-  if(!c.t&&!c.test&&!s.wu&&gb(S.P.goal)==='muscle')tags.push('<span class="tag">ירידה איטית · 3 שנ׳</span>');
+  if(!c.t&&!c.test&&!s.wu&&gHas('muscle'))tags.push('<span class="tag">ירידה איטית · 3 שנ׳</span>');
   const wk=s.wu&&c.w?sugW(c):null,showT=c.gr==='warm'||c.test||w.tip;
   return `<div class="wo" onclick="tapAny(event)">${bar}<div class="wh"><div class="eye">${eye}</div><h1 class="wn">${esc(c.name)}</h1>${tags.length?`<div class="meta" style="justify-content:center">${tags.join('')}</div>`:''}</div>
   ${['run','warm'].includes(c.gr)?'':`<div>${fig(c.ln||c.name,c.gr)}</div>`}
