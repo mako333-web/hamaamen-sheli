@@ -921,10 +921,10 @@ function h3load(){if(H3.st)return;if(!window.THREE||!THREE.GLTFLoader){H3.st=-1;
   try{new THREE.GLTFLoader().load('models/xbot.wasm',g=>{body.then(bb=>{try{h3prep(g,bb);H3.st=2}catch(e){return fail(e)}try{f3mount()}catch(e){console.log(e)}})},undefined,fail)}catch(e){fail(e)}}
 /* ---- anatomical body: decode, fit the rig to its joints, skin it ---- */
 function h3bodyDecode(buf){const hl=new DataView(buf).getUint32(0,true),meta=JSON.parse(new TextDecoder().decode(new Uint8Array(buf,4,hl))),n=meta.n,t=meta.t;let o=4+hl;
-  const q=new Uint16Array(buf,o,n*3);o+=n*6;const gid=new Uint8Array(buf,o,n);o+=n;const rg=new Uint8Array(buf,o,n);o+=n;o+=(4-o%4)%4;const idx=new Uint32Array(buf,o,t*3);
+  const q=new Uint16Array(buf,o,n*3);o+=n*6;const gid=new Uint8Array(buf,o,n);o+=n;const rg=new Uint8Array(buf,o,n);o+=n;const sh=new Uint8Array(buf,o,n);o+=n;o+=(4-o%4)%4;const idx=new Uint32Array(buf,o,t*3);
   const P=new Float32Array(n*3);for(let i=0;i<n*3;i++){const j=i%3;P[i]=(meta.lo[j]+q[i]*meta.sc[j])*.01}
   const L={};for(const k in meta.land)L[k]=meta.land[k].map(a=>new THREE.Vector3(a[0]*.01,a[1]*.01,a[2]*.01));
-  return{n,P,gid,rg,idx,L,groups:meta.groups}}
+  return{n,P,gid,rg,sh,idx,L,groups:meta.groups}}
 function h3fit(D){const B=H3.B,P=D.P,n=D.n,V=(x,y,z)=>new THREE.Vector3(x,y,z),c=k=>D.L[k][0].clone();
   const slab=(y,sd,reg,h)=>{let x=0,z=0,k=0;for(let i=0;i<n;i++){const X=P[i*3];if(Math.abs(P[i*3+1]-y)>h||Math.sign(X)!==sd||(D.rg[i]&3)!==reg)continue;x+=X;z+=P[i*3+2];k++}return V(x/k,y,z/k)};
   const midZ=y=>{let a=1e9,b=-1e9;for(let i=0;i<n;i++){if(Math.abs(P[i*3])>.06||Math.abs(P[i*3+1]-y)>.015)continue;const z=P[i*3+2];if(z<a)a=z;if(z>b)b=z}return(a+b)/2};
@@ -957,9 +957,9 @@ function h3skin(D,bones){const P=D.P,n=D.n,bi={};bones.forEach((b,i)=>bi[b.name.
   ['Left','Right'].forEach(S=>{[['Shoulder','Arm'],['Arm','ForeArm'],['ForeArm','Hand'],['Hand','HandMiddle1'],['UpLeg','Leg'],['Leg','Foot'],['Foot','ToeBase'],['ToeBase','Toe_End']].forEach(([a,b])=>S2(S+a,S+b));
     const fg=[];FI.forEach(F=>{for(let i=1;i<=3;i++){S2(S+'Hand'+F+i,S+'Hand'+F+(i+1));fg.push(S+'Hand'+F+i)}});
     cand[S]=[['Hips','Spine','Spine1','Spine2','Neck','Head',S+'Shoulder',S+'Arm'],['Spine2',S+'Shoulder',S+'Arm',S+'ForeArm',S+'Hand'].concat(fg),['Hips',S+'UpLeg',S+'Leg',S+'Foot',S+'ToeBase']].map(l=>l.filter(k=>seg[k]&&bi[k]!=null))});
-  const SI=new Uint16Array(n*4),SW=new Float32Array(n*4),p=new THREE.Vector3(),ab=new THREE.Vector3(),ap=new THREE.Vector3(),best=[0,0,0,0],bw=[0,0,0,0];
+  const gl=D.groups.indexOf('glutes'),SI=new Uint16Array(n*4),SW=new Float32Array(n*4),p=new THREE.Vector3(),ab=new THREE.Vector3(),ap=new THREE.Vector3(),best=[0,0,0,0],bw=[0,0,0,0];
   for(let i=0;i<n;i++){p.set(P[i*3],P[i*3+1],P[i*3+2]);const r=D.rg[i],sd=(r>>2)-1,S=(sd?sd>0:p.x<0)?'Right':'Left',L=cand[S][r&3]||cand[S][0];bw.fill(0);best.fill(0);
-    for(const k of L){const[a,b]=seg[k];ab.subVectors(b,a);ap.subVectors(p,a);const t=Math.max(0,Math.min(1,ap.dot(ab)/Math.max(1e-8,ab.lengthSq())));const d2=ap.addScaledVector(ab,-t).lengthSq();const w=Math.pow(d2+4e-4,-3);
+    for(const k of L){const[a,b]=(k==='Hips'&&(r&3)===2)?[seg.Hips[0],seg[S+'UpLeg'][0]]:seg[k];ab.subVectors(b,a);ap.subVectors(p,a);const t=Math.max(0,Math.min(1,ap.dot(ab)/Math.max(1e-8,ab.lengthSq())));const d2=ap.addScaledVector(ab,-t).lengthSq();const w=Math.pow(d2+6e-4,-2.5)*(k==='Hips'&&D.gid[i]===gl?3:1);
       for(let j=0;j<4;j++)if(w>bw[j]){for(let q=3;q>j;q--){bw[q]=bw[q-1];best[q]=best[q-1]}bw[j]=w;best[j]=bi[k];break}}
     const tot=bw[0]+bw[1]+bw[2]+bw[3];for(let j=0;j<4;j++){SI[i*4+j]=best[j];SW[i*4+j]=bw[j]/tot}}
   const G=new THREE.BufferGeometry();G.setAttribute('position',new THREE.BufferAttribute(P,3));G.setIndex(new THREE.BufferAttribute(D.idx,1));G.computeVertexNormals();
@@ -982,11 +982,11 @@ function h3prep(g,bb){const m=g.scene,B=H3.B;m.updateMatrixWorld(true);
   m.traverse(o=>{if(o.isBone){const k=o.name.replace(/^mixamorig:?/,'');B[k]=o;H3.bind.push([o,o.quaternion.clone()])}if(o.isSkinnedMesh){o.frustumCulled=false;o.castShadow=true;if(/Surface/.test(o.name))H3.surf=o;else H3.jnt=o}});
   if(bb){try{const D=h3bodyDecode(bb),bones=H3.surf.skeleton.bones;const q0=H3.bind.map(e=>[e[0],e[0].position.clone(),e[0].quaternion.clone()]);
     try{h3fit(D)}catch(e){q0.forEach(([b,p,q])=>{b.position.copy(p);b.quaternion.copy(q)});m.updateMatrixWorld(true);H3.bind.forEach(e=>e[1].copy(e[0].quaternion));throw e}
-    m.updateMatrixWorld(true);const G=h3skin(D,bones),mat=new THREE.MeshStandardMaterial({vertexColors:true,skinning:true,roughness:.5,metalness:0});
+    m.updateMatrixWorld(true);const G=h3skin(D,bones),mat=new THREE.MeshStandardMaterial({vertexColors:true,skinning:true,roughness:.42,metalness:0,side:THREE.DoubleSide});
     const bm=new THREE.SkinnedMesh(G,mat);bm.frustumCulled=false;bm.castShadow=true;m.add(bm);m.updateMatrixWorld(true);bm.bind(new THREE.Skeleton(bones),bm.matrixWorld);
     H3.surf.visible=false;if(H3.jnt)H3.jnt.visible=false;H3.surf=bm;H3.jnt=null;
     const mw={};H3MU.forEach((k,j)=>{const gi=D.groups.indexOf(k),a=new Float32Array(D.n);for(let i=0;i<D.n;i++)if(D.gid[i]===gi)a[i]=1;mw[k]=a});
-    H3.mw=mw;H3.ten=new Uint8Array(D.n);const ti=D.groups.indexOf('tendon');for(let i=0;i<D.n;i++)H3.ten[i]=D.gid[i]===ti?1:0;H3.col=new THREE.BufferAttribute(new Float32Array(D.n*3),3);G.setAttribute('color',H3.col)}catch(e){console.log('body model failed, using X Bot',e);bb=null}}
+    H3.mw=mw;H3.sh=D.sh;H3.ten=new Uint8Array(D.n);const ti=D.groups.indexOf('tendon');for(let i=0;i<D.n;i++)H3.ten[i]=D.gid[i]===ti?1:0;H3.col=new THREE.BufferAttribute(new Float32Array(D.n*3),3);G.setAttribute('color',H3.col)}catch(e){console.log('body model failed, using X Bot',e);bb=null}}
   if(!bb){
   // muscle membership per vertex (bind pose: facing +Z, left = +X)
   const s=H3.surf,G=s.geometry,P=G.attributes.position,N=G.attributes.normal,SI=G.attributes.skinIndex,SW=G.attributes.skinWeight,bn=s.skeleton.bones.map(b=>b.name.replace(/^mixamorig:?/,'')),n=P.count;
@@ -1005,14 +1005,14 @@ function h3prep(g,bb){const m=g.scene,B=H3.B;m.updateMatrixWorld(true);
   const sc=new THREE.Scene();sc.add(root);
   sc.add(new THREE.HemisphereLight(0xfff4ea,0x16393a,.75));
   const k1=new THREE.DirectionalLight(0xfff2e6,1.55);k1.position.set(2.2,4,3);k1.castShadow=true;k1.shadow.mapSize.set(1024,1024);const sc2=k1.shadow.camera;sc2.left=sc2.bottom=-2.2;sc2.right=sc2.top=2.2;sc2.near=.5;sc2.far=12;k1.shadow.radius=4;k1.shadow.bias=-.0005;sc.add(k1);sc.add(k1.target);H3.k1=k1;
-  const k2=new THREE.DirectionalLight(0x8fe8dc,.55);k2.position.set(-3,2,-2.5);sc.add(k2);const k3=new THREE.DirectionalLight(0xffffff,.3);k3.position.set(-1,1.2,3);sc.add(k3);
+  const k2=new THREE.DirectionalLight(0x8fe8dc,.55);k2.position.set(-3,2,-2.5);sc.add(k2);const k3=new THREE.DirectionalLight(0xffffff,.3);k3.position.set(-1,1.2,3);sc.add(k3);const k4=new THREE.DirectionalLight(0xffe6d6,.7);k4.position.set(-2.5,3,-3.5);sc.add(k4);
   const fl=new THREE.Mesh(new THREE.CircleGeometry(9,64),new THREE.MeshStandardMaterial({color:new THREE.Color(0x0e3132).convertSRGBToLinear(),roughness:1}));fl.rotation.x=-Math.PI/2;fl.receiveShadow=true;sc.add(fl);
   H3.scene=sc}
 function h3colour(MU){if(H3.ten)return h3colourBody(MU);const n=H3.col.count,a=H3.col.array,c=new THREE.Color(),base=new THREE.Color(0xc9ab95).convertSRGBToLinear(),pri=new THREE.Color(0xc6ec1f).convertSRGBToLinear(),sec=new THREE.Color(0x2ec4ae).convertSRGBToLinear(),mus=new THREE.Color(0xb98572).convertSRGBToLinear();
   const P=MU[0],S2=MU[1];for(let i=0;i<n;i++){c.copy(base);let tot=0;H3MU.forEach(k=>{const w=H3.mw[k][i];if(w>.001)tot=Math.max(tot,w)});c.lerp(mus,Math.min(1,tot)*.35);
     S2.forEach(k=>{const w=H3.mw[k][i];if(w>.001)c.lerp(sec,Math.min(1,w))});P.forEach(k=>{const w=H3.mw[k][i];if(w>.001)c.lerp(pri,Math.min(1,w))});a[i*3]=c.r;a[i*3+1]=c.g;a[i*3+2]=c.b}H3.col.needsUpdate=true}
-function h3colourBody(MU){const n=H3.col.count,a=H3.col.array,C=x=>new THREE.Color(x).convertSRGBToLinear(),mus=C(0xa4584a),ten=C(0xddd2c3),pri=C(0xc6ec1f),sec=C(0x2ec4ae),c=new THREE.Color();
-  const P=MU[0],S2=MU[1];for(let i=0;i<n;i++){c.copy(H3.ten[i]?ten:mus);S2.forEach(k=>{if(H3.mw[k][i])c.copy(sec)});P.forEach(k=>{if(H3.mw[k][i])c.copy(pri)});a[i*3]=c.r;a[i*3+1]=c.g;a[i*3+2]=c.b}H3.col.needsUpdate=true}
+function h3colourBody(MU){const n=H3.col.count,a=H3.col.array,C=x=>new THREE.Color(x).convertSRGBToLinear(),mus=C(0xa4584a),ten=C(0xd3c3ae),pri=C(0xc6ec1f),sec=C(0x2ec4ae),c=new THREE.Color();
+  const P=MU[0],S2=MU[1];for(let i=0;i<n;i++){c.copy(H3.ten[i]?ten:mus);S2.forEach(k=>{if(H3.mw[k][i])c.copy(sec)});P.forEach(k=>{if(H3.mw[k][i])c.copy(pri)});if(!H3.ten[i])c.multiplyScalar(.86+H3.sh[i]/255*.28);a[i*3]=c.r;a[i*3+1]=c.g;a[i*3+2]=c.b}H3.col.needsUpdate=true}
 /* ---- pose maths ---- */
 // אם ספריית התלת-ממד לא נטענה (אין רשת / חסימה) האפליקציה ממשיכה לעבוד עם ההדמיה הדו-ממדית
 const _T3=window.THREE,_a=_T3&&new _T3.Vector3(),_b=_T3&&new _T3.Vector3(),_q=_T3&&new _T3.Quaternion(),_q2=_T3&&new _T3.Quaternion(),_q3=_T3&&new _T3.Quaternion();
@@ -1237,7 +1237,7 @@ function h3tick(now){if(!H3.live)return;const host=document.querySelector('.fg3'
   h3frame((now-H3.t0)/1000);
   if(!H3.drag)H3.yaw+=(Math.sin(now/3400)*.28-H3.yaw)*.015;
   const c=H3.ctr,w=host.clientWidth,h=host.clientHeight;if(w&&(w!==H3.w||h!==H3.h)){F3.r.setSize(w,h,false);H3.cam.aspect=w/h;H3.cam.updateProjectionMatrix();H3.w=w;H3.h=h}
-  const a=H3.cam0+H3.yaw,asp=H3.cam.aspect||1.6,fv=Math.tan(H3.cam.fov*D2R/2),hz=Math.max(H3.sz.x*Math.abs(Math.sin(a))+H3.sz.z*Math.abs(Math.cos(a)),H3.sz.z),R=Math.max(H3.sz.y/(2*fv),Math.max(hz,H3.sz.x*.5)/(2*fv*asp))*1.08+.3;
+  const a=H3.cam0+H3.yaw,asp=H3.cam.aspect||1.6,fv=Math.tan(H3.cam.fov*D2R/2),hz=Math.max(H3.sz.x*Math.abs(Math.sin(a))+H3.sz.z*Math.abs(Math.cos(a)),H3.sz.z),R=Math.max(H3.sz.y/(2*fv),Math.max(hz,H3.sz.x*.5)/(2*fv*asp))*1.04+.12;
   H3.cam.position.set(c.x+Math.cos(a)*R,c.y+R*.22,c.z+Math.sin(a)*R);H3.cam.lookAt(c.x,c.y-.03,c.z);
   F3.r.render(H3.scene,H3.cam);requestAnimationFrame(h3tick)}
 function h3mount(host){const r=F3.r;if(!H3.cam){H3.cam=new THREE.PerspectiveCamera(28,1.6,.05,40);r.shadowMap.enabled=true;r.shadowMap.type=THREE.PCFSoftShadowMap;
