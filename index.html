@@ -322,7 +322,7 @@ const A0=(()=>{try{return JSON.parse(localStorage.getItem('fit1auth')||sessionSt
 let AU={u:A0&&A0.u||null,id:A0&&A0.id||null,tok:A0&&A0.t||null,db:null,fb:A0&&A0.fb?1:0};
 const CLD=()=>!!(window.claude&&claude.use);
 /* חשבונות באתר: הגדרות פרויקט Firebase. אלה לא סודות; ההגנה על הנתונים היא בכללי האבטחה (firestore.rules) */
-const FBC=null;
+const FBC={apiKey:"AIzaSyDAUFpSsM9S3VBdncf4rqj1frT7F5UGRQU",authDomain:"hamaamen-sheli.firebaseapp.com",projectId:"hamaamen-sheli",storageBucket:"hamaamen-sheli.firebasestorage.app",messagingSenderId:"786855519280",appId:"1:786855519280:web:18f5045ecdc67034d339f5"};
 const FBON=()=>!!FBC&&!CLD();
 S.v=(AU.u||(A0&&A0.g)||(!CLD()&&!FBC))?(S.setup?'home':'wiz'):'auth';
 const blob=()=>({P:S.P,eq:S.eq,log:S.log,setup:S.setup,cal:S.cal,cg:S.cg,dm:S.dm,wt:S.wt,cx:S.cx,fv:S.fv,ld:S.ld,aw:S.aw,fb:S.fb,bp:S.bp,lv:S.lv,lc:S.lc,awt:S.awt,u:S.u});
