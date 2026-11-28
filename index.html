@@ -1263,7 +1263,7 @@ ${A.err?`<p class="err">${esc(A.err)}</p>`:''}<button class="btn" ${A.busy?'disa
 <button class="ghost" style="align-self:center" onclick="guest()">המשך כאורח · נשמר רק במכשיר הזה</button>
 <p class="note" style="text-align:center">${up&&S.setup?'הנתונים במכשיר יעברו לחשבון. ':''}הגנה בסיסית בלבד, לא למידע רגיש.</p><p class="note lgl"><button class="ghost" onclick="legalGo()">פרטיות ותנאי שימוש · האפליקציה אינה מאמן מוסמך</button></p></div>`}
 function am(m){const e=$('au1');if(e)S.au.u=e.value;S.au.m=m;S.au.err='';R()}
-function astay(){S.au.st=S.au.st?0:1;const b=$('au4');if(b){b.classList.toggle('on',!!S.au.st);b.innerHTML=(S.au.st?IC.ck:'')+' השאר אותי מחובר'}}
+function astay(){S.au.st=S.au.st?0:1;if(FBON()){R();return}const b=$('au4');if(b){b.classList.toggle('on',!!S.au.st);b.setAttribute('aria-pressed',!!S.au.st);b.innerHTML=(S.au.st?IC.ck:'')+' השאר אותי מחובר'}}
 function guest(){try{localStorage.setItem('fit1auth',JSON.stringify({g:1}))}catch(e){}S.v=S.setup?'home':'wiz';R()}
 async function authGo(){
   const A=S.au,up=A.m==='up',e3=$('au3');A.u=$('au1').value;const pw=$('au2').value,un=A.u.trim().toLowerCase().replace(/[^a-z0-9_.\-֐-׿]/g,'').slice(0,24);
@@ -1297,18 +1297,24 @@ const fbDoc=()=>FB.db.collection('users').doc(AU.id);
 async function fbPush(){if(!AU.fb||!AU.id||!FB)return;try{await fbDoc().set({s:JSON.stringify(blob()),upd:S.u||Date.now(),name:AU.u},{merge:true})}catch(e){}}
 function fbAuthUI(){const A=S.au;return `<div class="auth"><div class="brand">${LG(84)}<div class="wm" role="heading" aria-level="1"><b>home gym</b><small>MY · COACH</small></div><p class="note">התכנית וההתקדמות שלך, בכל טלפון</p></div>
 <section class="card"><p class="note">נכנסים עם חשבון Google. הסיסמה נשארת אצל Google, ואנחנו שומרים רק את נתוני האימון שלך.</p>
+<div><button id="au4" class="chip ${A.st?'on':''}" aria-pressed="${!!A.st}" onclick="astay()">${A.st?IC.ck:''} השאר אותי מחובר</button><p class="note">${A.st?'הכניסה תישמר גם אחרי סגירת האפליקציה.':'אחרי סגירת הדפדפן צריך להתחבר שוב. מתאים למכשיר משותף.'}</p></div>
 ${A.err?`<p class="err" role="alert">${esc(A.err)}</p>`:''}<button class="btn" ${A.busy?'disabled':''} onclick="fbGo()">${A.busy?'מתחבר…':'כניסה עם Google'}</button></section>
 <button class="ghost" style="align-self:center" onclick="guest()">המשך כאורח · נשמר רק במכשיר הזה</button>
 ${S.setup?'<p class="note" style="text-align:center">הנתונים שכבר במכשיר יעברו לחשבון.</p>':''}<p class="note lgl"><button class="ghost" onclick="legalGo()">פרטיות ותנאי שימוש · האפליקציה אינה מאמן מוסמך</button></p></div>`}
+let FBST=null;
+// "השאר אותי מחובר": כבוי = הכניסה נשמרת רק עד סגירת הדפדפן (sessionStorage + SESSION של Firebase)
+function fbKeep(){if(FBST!=null)return FBST;try{return !(sessionStorage.getItem('fit1auth')&&!localStorage.getItem('fit1auth'))}catch(e){return 1}}
 async function fbGo(){const A=S.au;A.busy=1;A.err='';R();
-  try{const f=await fbInit(),pv=new firebase.auth.GoogleAuthProvider();fbListen(f);
+  try{const f=await fbInit(),pv=new firebase.auth.GoogleAuthProvider();FBST=A.st?1:0;
+    try{const P=firebase.auth.Auth.Persistence;await f.auth.setPersistence(FBST?P.LOCAL:P.SESSION)}catch(e){}
+    fbListen(f);
     try{await f.auth.signInWithPopup(pv)}catch(e){if(e&&/popup-blocked|operation-not-supported/.test(e.code||''))return f.auth.signInWithRedirect(pv);throw e}
   }catch(e){A.busy=0;const c=e&&e.code||'';A.err=/popup-closed|cancelled-popup/.test(c)?'':(/network/.test(c)||!c?'אין חיבור לשירות הכניסה. כדאי לבדוק את האינטרנט ולנסות שוב.':'הכניסה לא הצליחה. אפשר לנסות שוב.')+(c?' ('+c+')':'');R()}}
 async function fbUser(u){
-  if(!u){if(AU.fb){AU={u:null,id:null,tok:null,db:null,fb:0};try{localStorage.removeItem('fit1auth')}catch(e){}if(S.v!=='work'){S.v='auth';R()}}return}
+  if(!u){if(AU.fb){AU={u:null,id:null,tok:null,db:null,fb:0};try{localStorage.removeItem('fit1auth');sessionStorage.removeItem('fit1auth')}catch(e){}if(S.v!=='work'){S.v='auth';R()}}return}
   const first=!(A0&&A0.fb&&A0.id===u.uid)&&!(AU.fb&&AU.id===u.uid);
   AU={u:u.displayName||(u.email||'').split('@')[0]||'משתמש',id:u.uid,tok:null,db:null,fb:1};
-  try{localStorage.setItem('fit1auth',JSON.stringify({fb:1,u:AU.u,id:AU.id}))}catch(e){}
+  try{const v=JSON.stringify({fb:1,u:AU.u,id:AU.id});if(fbKeep()){localStorage.setItem('fit1auth',v);sessionStorage.removeItem('fit1auth')}else{sessionStorage.setItem('fit1auth',v);localStorage.removeItem('fit1auth')}}catch(e){}
   S.au.busy=0;S.au.err='';
   try{const sn=await fbDoc().get(),d=sn.exists?sn.data():null;
     if(d&&d.s&&S.v!=='work'&&(first||(d.upd||0)>(S.u||0))){ldS(JSON.parse(d.s));try{localStorage.setItem('fit1',JSON.stringify(blob()))}catch(e){}}
