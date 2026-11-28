@@ -40,6 +40,7 @@ svg{flex:none}
 .btn.run{background:var(--run)}
 .btn2{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 16px;border-radius:14px;background:var(--sf2);color:var(--ink);font-weight:700;font-size:15px;transition:transform .12s}
 .btn2 svg{width:18px;height:18px}
+.lgl{text-align:center;margin:8px 0 0}.lgl .ghost{font-size:12px;min-height:44px;text-decoration:underline;display:inline-flex}.lg ul{margin:8px 0 0;padding-inline-start:20px;display:flex;flex-direction:column;gap:6px}.lg p{margin:6px 0 0}
 .ghost{display:inline-flex;align-items:center;gap:4px;color:var(--mut);font-weight:500;min-height:44px;padding:0 6px}
 .ghost svg{width:16px;height:16px}
 .ic{width:40px;height:40px;border-radius:12px;background:var(--sf2);display:inline-grid;place-items:center;color:var(--ink);flex:none}
@@ -492,7 +493,8 @@ function home(){
   return `${hd(title,sd.toLocaleDateString('he-IL',{day:'numeric',month:'long'})+` · ${wd} מתוך ${fit.length+run.length} אימונים השבוע`)}
   ${ASM()}
   <section class="cal"><div class="row"><button class="ic" onclick="wkn(-1)" aria-label="${S.mv?'חודש קודם':'שבוע קודם'}">${IC.cr}</button><b class="grow n" style="text-align:center;font-size:15px">${ct}</b><button class="ic" onclick="wkn(1)" aria-label="${S.mv?'חודש הבא':'שבוע הבא'}">${IC.cl}</button><button class="ic" onclick="tmv()" aria-label="${S.mv?'תצוגת שבוע':'תצוגת חודש'}">${S.mv?IC.cal:IC.grid}</button></div><div class="wk">${cg}</div></section>
-  ${c}`}
+  ${c}
+  <p class="note lgl"><button class="ghost" onclick="legalGo()">פרטיות ותנאי שימוש · האפליקציה אינה מאמן מוסמך</button></p>`}
 
 /* ---------- equipment ---------- */
 function CE(){return[...new Set(S.cx.filter(c=>!c.k).map(c=>c.e))].map(e=>['cx:'+e,e])}
@@ -636,7 +638,9 @@ function settings(){const P=S.P,chs=(k,o)=>`<div class="chips">${o.map(x=>`<butt
   ${dt('lv','שלבי התקדמות במשקל גוף',`<p class="note">כשמגיעים לראש טווח החזרות בכל הסטים פעמיים, עולים לגרסה קשה יותר. אם לא מגיעים לתחתית הטווח פעמיים, יורדים שלב. אפשר גם לשנות ידנית.</p><div>${LAD.map((c,i)=>{const s=lstep(i);return `<div class="er"><b>${esc(c.n)}<div class="note">${esc(c.s[s])} · שלב ${s+1}/${c.s.length}</div></b><div class="stp"><button onclick="setLv(${i},-1)" aria-label="שלב קל יותר" ${s?'':'disabled'}>−</button><span class="n">${s+1}</span><button onclick="setLv(${i},1)" aria-label="שלב קשה יותר" ${s<c.s.length-1?'':'disabled'}>+</button></div></div>`}).join('')}</div>`)}
   ${ks.length?dt('ld','משקלי עבודה',`<p class="note">מה שיוצע בפעם הבאה. אפשר לתקן.</p><div>${ks.map((k,i)=>`<div class="er"><b>${esc(k)}</b><input aria-label="${esc(k)}: משקל עבודה בק״ג" id="ld${i}" class="n" type="number" step="0.5" value="${S.ld[k].kg}" style="width:84px;flex:none"><button class="btn2" onclick="setLd(${i},${J(k)})">עדכן</button></div>`).join('')}</div>`):''}
   <p class="note">${mfree()?'':'בזמן אימון, כפתור האוזניות מסיים סט או מדלג על מנוחה (כשאין מוזיקה ברקע). '}זו מסגרת כללית ולא ייעוץ אישי: בכאב חד או מצב רפואי, יש לעצור ולהתייעץ עם רופא.</p>
-  <button class="ghost" onclick="S.q=0;S.v='wiz';R()">לעבור שוב על השאלון</button>`}
+  <button class="ghost" onclick="S.q=0;S.v='wiz';R()">לעבור שוב על השאלון</button>
+  ${AU.fb?`<div class="set">${S.delAsk?`<p class="note">למחוק את החשבון ואת כל נתוני האימון מהענן? אי אפשר לבטל את זה.</p><div class="row"><button class="btn2 grow" onclick="S.delAsk=0;R()">ביטול</button><button class="btn2 grow" style="color:var(--bad,#e5484d)" onclick="fbDelete()">כן, למחוק</button></div>`:`<button class="ghost" onclick="S.delAsk=1;R()">מחיקת החשבון והנתונים</button>`}</div>`:''}
+  <p class="note lgl"><button class="ghost" onclick="legalGo()">פרטיות ותנאי שימוש · האפליקציה אינה מאמן מוסמך</button></p>`}
 
 /* ---------- assessment ---------- */
 const AX=[['אף פעם','עד שנה','1–3 שנים','3+ שנים'],['אף אימון','1–2 בשבוע','3+ בשבוע']];
@@ -1257,7 +1261,7 @@ function auth(){if(FBON())return fbAuthUI();const A=S.au,up=A.m==='up';return `<
 <div><button id="au4" class="chip ${A.st?'on':''}" onclick="astay()">${A.st?IC.ck:''} השאר אותי מחובר</button></div>
 ${A.err?`<p class="err">${esc(A.err)}</p>`:''}<button class="btn" ${A.busy?'disabled':''} onclick="authGo()">${A.busy?'רגע…':up?'צור חשבון':'התחבר'}</button></section>
 <button class="ghost" style="align-self:center" onclick="guest()">המשך כאורח · נשמר רק במכשיר הזה</button>
-<p class="note" style="text-align:center">${up&&S.setup?'הנתונים במכשיר יעברו לחשבון. ':''}הגנה בסיסית בלבד, לא למידע רגיש.</p></div>`}
+<p class="note" style="text-align:center">${up&&S.setup?'הנתונים במכשיר יעברו לחשבון. ':''}הגנה בסיסית בלבד, לא למידע רגיש.</p><p class="note lgl"><button class="ghost" onclick="legalGo()">פרטיות ותנאי שימוש · האפליקציה אינה מאמן מוסמך</button></p></div>`}
 function am(m){const e=$('au1');if(e)S.au.u=e.value;S.au.m=m;S.au.err='';R()}
 function astay(){S.au.st=S.au.st?0:1;const b=$('au4');if(b){b.classList.toggle('on',!!S.au.st);b.innerHTML=(S.au.st?IC.ck:'')+' השאר אותי מחובר'}}
 function guest(){try{localStorage.setItem('fit1auth',JSON.stringify({g:1}))}catch(e){}S.v=S.setup?'home':'wiz';R()}
@@ -1295,7 +1299,7 @@ function fbAuthUI(){const A=S.au;return `<div class="auth"><div class="brand">${
 <section class="card"><p class="note">נכנסים עם חשבון Google. הסיסמה נשארת אצל Google, ואנחנו שומרים רק את נתוני האימון שלך.</p>
 ${A.err?`<p class="err" role="alert">${esc(A.err)}</p>`:''}<button class="btn" ${A.busy?'disabled':''} onclick="fbGo()">${A.busy?'מתחבר…':'כניסה עם Google'}</button></section>
 <button class="ghost" style="align-self:center" onclick="guest()">המשך כאורח · נשמר רק במכשיר הזה</button>
-${S.setup?'<p class="note" style="text-align:center">הנתונים שכבר במכשיר יעברו לחשבון.</p>':''}</div>`}
+${S.setup?'<p class="note" style="text-align:center">הנתונים שכבר במכשיר יעברו לחשבון.</p>':''}<p class="note lgl"><button class="ghost" onclick="legalGo()">פרטיות ותנאי שימוש · האפליקציה אינה מאמן מוסמך</button></p></div>`}
 async function fbGo(){const A=S.au;A.busy=1;A.err='';R();
   try{const f=await fbInit(),pv=new firebase.auth.GoogleAuthProvider();fbListen(f);
     try{await f.auth.signInWithPopup(pv)}catch(e){if(e&&/popup-blocked|operation-not-supported/.test(e.code||''))return f.auth.signInWithRedirect(pv);throw e}
@@ -1313,17 +1317,34 @@ async function fbUser(u){
 let FBL=0;function fbListen(f){if(FBL)return;FBL=1;f.auth.getRedirectResult().catch(()=>{S.au.err='הכניסה לא הצליחה. אפשר לנסות שוב.';R()});f.auth.onAuthStateChanged(fbUser)}
 function fbStart(){if(!AU.fb&&S.v!=='auth')return;fbInit().then(fbListen).catch(()=>{})}
 
+/* ---------- פרטיות ותנאי שימוש ---------- */
+// כתובת ליצירת קשר שתוצג בדף הפרטיות (למשל מייל). ריק = לא מוצג
+const CONTACT='';
+let LGB='home';function legalGo(){LGB=S.v==='legal'?LGB:S.v;go('legal')}
+async function fbDelete(){try{if(AU.fb&&FB){await fbDoc().delete();try{await FB.auth.currentUser.delete()}catch(e){}}}catch(e){S.delAsk=0;S.msg='';R();return}S.delAsk=0;logout()}
+function legal(){const li=a=>`<ul>${a.map(x=>`<li>${x}</li>`).join('')}</ul>`;
+  return `<header class="top"><button class="ic" onclick="go(LGB)" aria-label="חזרה">${IC.cr}</button><div class="grow"><div class="eye">עודכן לאחרונה: 28 בנובמבר 2026</div><h1>פרטיות ותנאי שימוש</h1></div></header>
+  <section class="card lg"><h2>הבהרה חשובה</h2>
+  <p>המאמן שלי הוא כלי עזר לאימון עצמי בבית. הוא <b>אינו מאמן כושר מוסמך, פיזיותרפיסט או רופא</b>, ואינו מחליף ייעוץ או ליווי מקצועי. התכניות, המשקלים המוצעים וההדמיות הם הערכה כללית שמבוססת על הפרטים שהוזנו.</p>
+  ${li(['לפני שמתחילים, מומלץ להתייעץ עם רופא. במיוחד חשוב לעשות זאת כשיש מצב רפואי, פציעה, הריון, או אחרי תקופה ארוכה בלי פעילות.','בזמן אימון עוצרים מיד כשמופיעים כאב חד, סחרחורת, קוצר נשימה חריג או לחץ בחזה.','כדאי לבדוק שהציוד תקין ויציב, ולהתאמן במקום בטוח ומרווח.','השימוש באפליקציה, בתרגילים ובציוד הוא באחריות המשתמש בלבד. מפעילי האפליקציה אינם אחראים לפציעה, לנזק או לכל תוצאה של השימוש בה, ככל שהחוק מתיר.'])}</section>
+  <section class="card lg"><h2>איזה מידע נשמר</h2>
+  ${li(['<b>כאורח:</b> כל הנתונים נשמרים רק בדפדפן במכשיר הזה, ולא נשלחים לשום מקום.','<b>עם חשבון Google:</b> נשמרים השם, כתובת המייל ומזהה החשבון, וגם נתוני האימון: פרופיל, ציוד, תכנית, משקלים, היסטוריה והערות. המידע נשמר בשירות Google Firebase.','<b>תמונות לזיהוי ציוד:</b> באתר, התמונה מעובדת בתוך המכשיר ולא נשלחת לשום מקום. בגרסה שפועלת בתוך Claude, התמונה נשלחת ל-Claude לצורך הזיהוי בלבד.','אין באפליקציה פרסומות. לא מוכרים מידע ולא משתפים אותו עם אף גורם, מלבד שירותי התשתית שמפעילים את האפליקציה: Google Firebase לחשבונות, ו-GitHub Pages לאירוח האתר.'])}</section>
+  <section class="card lg"><h2>אבטחה ומחיקה</h2>
+  ${li(['כל משתמש יכול לגשת רק לנתונים של עצמו. הסיסמה של Google לא מגיעה אלינו בשום שלב.','התנתקות מוחקת את הנתונים מהמכשיר.','מחיקה מלאה של החשבון ושל הנתונים בענן אפשרית בכל רגע, בהגדרות ← ״מחיקת החשבון והנתונים״.'])}
+  ${CONTACT?`<p>לשאלות ובקשות: <span dir="ltr">${esc(CONTACT)}</span></p>`:''}</section>
+  <button class="btn2" onclick="go(LGB)">חזרה</button>`}
+
 /* ---------- render ---------- */
 function go(v){S.v=v;R()}
 function nav(){const o=document.querySelector('nav');if(o)o.remove();
-  if(['wiz','work','auth','assess'].includes(S.v)||(S.v==='equip'&&S.first))return;
+  if(['wiz','work','auth','assess','legal'].includes(S.v)||(S.v==='equip'&&S.first))return;
   const h=document.createElement('nav');h.setAttribute('aria-label','ניווט');
   h.innerHTML=`<div>${[['home','היום',IC.cal],['equip','ציוד',IC.db],['set','הגדרות',IC.set]].map(t=>`<button class="${S.v===t[0]?'on':''}" aria-pressed="${!!(S.v===t[0])}" onclick="go('${t[0]}')" ${S.v===t[0]?'aria-current="page"':''}>${t[2]}<span>${t[1]}</span></button>`).join('')}</div>`;
   document.body.appendChild(h)}
 let lk=null;
 // טווחי מספרים (6–10) מתהפכים בטקסט מימין לשמאל; עוטפים אותם כבידוד LTR
 const nr=h=>h.replace(/(\d+(?:\.\d+)?)–(\d+(?:\.\d+)?)/g,'\u2066$1–$2\u2069');
-function R(){const fa=document.activeElement,fk=S.fx||(fa&&fa.dataset&&fa.dataset.f);S.fx=null;const y=window.scrollY,k=S.v+(S.v==='wiz'?':'+S.q:'')+(S.v==='work'&&w?':'+w.q+w.ph:'');$('app').innerHTML=nr(({wiz,home,equip,set:settings,work,assess,auth})[S.v]());nav();try{f3mount()}catch(e){};wsave();window.scrollTo(0,k===lk?y:0);if(!fk&&lk!==null&&k!==lk){const h=document.querySelector('#app h1,#app [role=heading]');if(h){h.setAttribute('tabindex','-1');h.focus({preventScroll:true})}}if(fk&&k===lk){const fe=document.querySelector(`[data-f="${fk}"]`);if(fe)fe.focus({preventScroll:true})}lk=k}
+function R(){const fa=document.activeElement,fk=S.fx||(fa&&fa.dataset&&fa.dataset.f);S.fx=null;const y=window.scrollY,k=S.v+(S.v==='wiz'?':'+S.q:'')+(S.v==='work'&&w?':'+w.q+w.ph:'');$('app').innerHTML=nr(({wiz,home,equip,set:settings,work,assess,auth,legal})[S.v]());nav();try{f3mount()}catch(e){};wsave();window.scrollTo(0,k===lk?y:0);if(!fk&&lk!==null&&k!==lk){const h=document.querySelector('#app h1,#app [role=heading]');if(h){h.setAttribute('tabindex','-1');h.focus({preventScroll:true})}}if(fk&&k===lk){const fe=document.querySelector(`[data-f="${fk}"]`);if(fe)fe.focus({preventScroll:true})}lk=k}
 wrestore();R();resume();
 /* PWA: התקנה למסך הבית ועבודה בלי אינטרנט. בודקים עדכון בכל פעם שחוזרים לאפליקציה */
 if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').then(r=>{document.addEventListener('visibilitychange',()=>{if(!document.hidden)r.update().catch(()=>{})})}).catch(()=>{})})}
