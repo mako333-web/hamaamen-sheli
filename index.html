@@ -1325,7 +1325,8 @@ function fbStart(){if(!AU.fb&&S.v!=='auth')return;fbInit().then(fbListen).catch(
 
 /* ---------- פרטיות ותנאי שימוש ---------- */
 // כתובת ליצירת קשר שתוצג בדף הפרטיות (למשל מייל). ריק = לא מוצג
-const CONTACT='';
+// TODO(maor): כתובת זמנית! להחליף במייל אמיתי לפני השקה לקהל
+const CONTACT='example@example.co.il';
 let LGB='home';function legalGo(){LGB=S.v==='legal'?LGB:S.v;go('legal')}
 async function fbDelete(){try{if(AU.fb&&FB){await fbDoc().delete();try{await FB.auth.currentUser.delete()}catch(e){}}}catch(e){S.delAsk=0;S.msg='';R();return}S.delAsk=0;logout()}
 function legal(){const li=a=>`<ul>${a.map(x=>`<li>${x}</li>`).join('')}</ul>`;
